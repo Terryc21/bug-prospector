@@ -4,7 +4,16 @@ Mine for hidden bugs that pattern-based auditors miss.
 
 ## What It Does
 
-Auditing tools (SwiftLint, Axiom, scan-similar-bugs) find **syntactic** anti-patterns — force unwraps, missing `@MainActor`, retain cycles. Bug Prospector finds **semantic** fragility — the gap between "the code compiles and runs" and "the code handles every real-world scenario."
+**Code auditors** check *how your code is written* — they find force unwraps, missing `@MainActor`, retain cycles, and deprecated APIs. If the syntax breaks a rule, they flag it.
+
+**Bug Prospector** checks *what your code assumes* — it finds logic that compiles and runs fine today but breaks when a real user does something unexpected. Things like:
+
+- What happens when that array is empty?
+- What if the user double-taps Save before the first save finishes?
+- What if the network call completes after the view disappears?
+- What if they open the app for the first time in 3 months?
+
+**Auditors find code that looks wrong. Bug Prospector finds code that looks right but behaves wrong.**
 
 ## 7 Analysis Lenses
 
