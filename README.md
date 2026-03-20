@@ -78,6 +78,15 @@ After the report, you can fix bugs immediately. Fixes are grouped into phases:
 | New platform support | Platform + Boundaries |
 | Data model changes | Data Lifecycle + Assumptions |
 
+## How It Works
+
+For how Bug Prospector differs from pattern-based tools (linters, compiler warnings, code review), and how it pairs with [Workflow Audit](https://github.com/Terryc21/workflow-audit), see [How It Works](docs/HOW_IT_WORKS.md).
+
+## See Also
+
+- [Workflow Audit](https://github.com/Terryc21/workflow-audit) — Audit SwiftUI user workflows for dead ends and UX friction
+- [Xcode Workflow Skills](https://github.com/Terryc21/xcode-workflow-skills) — Full 22-skill suite (includes both)
+
 ## License
 
 MIT
