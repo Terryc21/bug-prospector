@@ -56,6 +56,17 @@ Reports are written to `.agents/research/YYYY-MM-DD-bug-prospector-*.md` with:
 - Fragile code warnings (works now, may break later)
 - Already-guarded instances (reference)
 
+**Terminal-adaptive tables:** Detects terminal width before rendering. Wide terminals (160+ columns) get the full 8-column table inline. Narrow terminals get a compact 4-column table with the full table written to the report file.
+
+## Fix Workflow
+
+After the report, you can fix bugs immediately. Fixes are grouped into phases:
+
+- **"Fix all bugs now"** — Phase-by-phase with a confirmation gate before each phase. Opt out of remaining gates at any time.
+- **"Fix selected bugs"** — Pick specific bugs, confirm once, then all selected are fixed.
+- **"Create implementation plan"** — Phased plan without code changes.
+- **"Report is sufficient"** — Just the report.
+
 ## When to Use
 
 | Situation | Recommended Lenses |
