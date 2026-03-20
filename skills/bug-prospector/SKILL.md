@@ -358,7 +358,8 @@ Before classifying ANY finding:
 3. **Check for intentional design** — comments, documentation, or clear architectural decisions
 4. **Check if it's actually reachable** — dead code or unreachable paths are not bugs
 5. **Assess real-world likelihood** — theoretical issues in impossible scenarios are not bugs
-6. **Classify** as:
+6. **Count blast radius** — grep for callers/references of the affected function or property to determine how many files the fix would touch
+7. **Classify** as:
    - **BUG:** Real risk, no guard, realistic scenario
    - **FRAGILE:** Works now but will break under foreseeable conditions
    - **OK:** Already guarded or intentional design
@@ -374,7 +375,24 @@ Before classifying ANY finding:
 
 ## Step 4: Generate Report
 
-**Display the summary table and all findings inline**, then write to `.agents/research/YYYY-MM-DD-bug-prospector-<scope>.md`:
+### 4.1: Check Terminal Width
+
+Before rendering the report, check terminal width:
+
+```bash
+tput cols
+```
+
+- **160+ columns:** Use the **full 8-column table** inline and in the report file.
+- **Under 160 columns:** Use the **compact 4-column table** inline, write the **full 8-column table** to the report file only. Display this notice after the inline table:
+
+> **Compact view** — your terminal is [N] columns wide (160+ needed for full table). The complete Issue Rating Table with all 8 columns has been written to `.agents/research/YYYY-MM-DD-bug-prospector-<scope>.md`. Open that file or widen your terminal to 160+ columns to view it as a single table.
+
+### 4.2: Render Report
+
+**Display the summary and findings inline**, then write to `.agents/research/YYYY-MM-DD-bug-prospector-<scope>.md`.
+
+The **report file** always uses the full 8-column table regardless of terminal width.
 
 ```markdown
 # Bug Prospector Report: [Scope Description]
@@ -396,6 +414,9 @@ Before classifying ANY finding:
 ## Issue Rating Table
 
 All BUG and FRAGILE findings rated and sorted by Urgency then ROI:
+```
+
+**Full table (160+ columns) — used inline AND in report file:**
 
 | # | Finding | Lens | Urgency | Risk: Fix | Risk: No Fix | ROI | Blast Radius | Fix Effort |
 |---|---------|------|---------|-----------|-------------|-----|-------------|------------|
@@ -403,15 +424,25 @@ All BUG and FRAGILE findings rated and sorted by Urgency then ROI:
 | 2 | Manager.swift:89 — isLoading never reset on error | Error Path | 🟡 High | ⚪ Low | 🟡 High | 🟠 Excellent | ⚪ 1 file | Trivial |
 | 3 | ViewModel.swift:200 — DateFormatter without timezone | Time | 🟢 Medium | ⚪ Low | 🟢 Medium | 🟢 Good | 🟢 3 files | Small |
 
-**Note:** The Lens column indicates which analysis lens found the issue.
+**Compact table (under 160 columns) — used inline only:**
 
+| # | Finding | Urgency | Fix Effort |
+|---|---------|---------|------------|
+| 1 | File.swift:45 — array accessed without bounds check | 🔴 Critical | Trivial |
+| 2 | Manager.swift:89 — isLoading never reset on error | 🟡 High | Trivial |
+| 3 | ViewModel.swift:200 — DateFormatter without timezone | 🟢 Medium | Small |
+
+The compact table keeps the two most actionable columns (Urgency + Fix Effort). Full ratings are in the report file.
+
+```markdown
 Use the Issue Rating scale:
 - **Urgency:** 🔴 CRITICAL (crash/data loss) · 🟡 HIGH (incorrect behavior) · 🟢 MEDIUM (degraded UX) · ⚪ LOW (cosmetic/minor)
 - **Risk: Fix:** Risk of the fix introducing regressions (⚪ Low for isolated changes, 🟡 High for shared code paths)
 - **Risk: No Fix:** User-facing consequence if left unfixed
 - **ROI:** 🟠 Excellent · 🟢 Good · 🟡 Marginal · 🔴 Poor
-- **Blast Radius:** How many callers/files are exposed to this bug instance
+- **Blast Radius:** Number of files the fix touches (e.g., "⚪ 1 file", "🟢 3 files", "🟡 12 files"). Count by grepping for callers/references before rating.
 - **Fix Effort:** Trivial / Small / Medium / Large
+```
 
 ## Detailed Findings
 
@@ -462,7 +493,7 @@ AskUserQuestion with questions:
     "question": "How would you like to proceed?",
     "header": "Next",
     "options": [
-      {"label": "Fix all bugs now", "description": "Walk through each BUG finding and apply fixes"},
+      {"label": "Fix all bugs now", "description": "Walk through each BUG finding and apply fixes (phase-by-phase)"},
       {"label": "Fix selected bugs", "description": "I'll choose which ones to fix"},
       {"label": "Create implementation plan", "description": "Generate a phased plan from the findings"},
       {"label": "Report is sufficient", "description": "I'll handle fixes manually"}
@@ -472,9 +503,78 @@ AskUserQuestion with questions:
 ]
 ```
 
-If fixing: Walk through each BUG finding, show the problematic code, propose a fix, apply after user approval.
-
 If creating plan: Group findings by file proximity and dependency, order by urgency, output as a numbered plan.
+
+### Fix Workflow: "Fix all bugs now"
+
+Group bugs into phases by file proximity and dependency (as in the report's Implementation Plan). Before each phase, prompt with a **phase gate** — one question, always includes opt-out:
+
+```
+AskUserQuestion with questions:
+[
+  {
+    "question": "Phase N: [Phase name] ([count] fixes — [key files]). Proceed?",
+    "header": "Phase N",
+    "options": [
+      {"label": "Proceed (Recommended)", "description": "Implement this phase now"},
+      {"label": "Proceed — skip remaining phase gates", "description": "Batch mode: implement all remaining phases without prompting"},
+      {"label": "Let's chat about this phase", "description": "Discuss before deciding"},
+      {"label": "Stop here", "description": "Skip remaining phases"}
+    ],
+    "multiSelect": false
+  }
+]
+```
+
+**Every phase gets this same prompt** (including the opt-out) until the user either completes all phases or opts out.
+
+**Rules:**
+- If user chooses "skip remaining phase gates": execute all remaining phases without prompting
+- If user chooses "Let's chat": wait for user input, answer questions, then re-prompt the same phase gate
+- If user chooses "Stop here": stop fixing and report what was completed
+- Always build both platforms after each phase to verify
+
+### Fix Workflow: "Fix selected bugs"
+
+Present the bug list for selection:
+
+```
+AskUserQuestion with questions:
+[
+  {
+    "question": "Which bugs should I fix? (Reference the Issue Rating Table above)",
+    "header": "Select",
+    "options": [
+      {"label": "Bug 1 — [brief description]", "description": "[Urgency] [Fix Effort]"},
+      {"label": "Bug 2 — [brief description]", "description": "[Urgency] [Fix Effort]"},
+      {"label": "Bug 3 — [brief description]", "description": "[Urgency] [Fix Effort]"}
+    ],
+    "multiSelect": true
+  }
+]
+```
+
+After selection, one confirmation prompt with opt-out:
+
+```
+AskUserQuestion with questions:
+[
+  {
+    "question": "Fix [N] selected bugs: [brief list]. Proceed?",
+    "header": "Confirm",
+    "options": [
+      {"label": "Proceed (Recommended)", "description": "Fix all selected bugs now"},
+      {"label": "Let's chat first", "description": "Discuss specific bugs before fixing"},
+      {"label": "Go back", "description": "Re-select bugs"}
+    ],
+    "multiSelect": false
+  }
+]
+```
+
+Then fix all selected bugs without per-bug prompting — the selection itself was the decision.
+
+**If user chooses "Let's chat":** Answer questions, then re-prompt the confirmation.
 
 ---
 
