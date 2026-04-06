@@ -1,5 +1,7 @@
 # Bug Prospector
 
+![Visitors](https://komarev.com/ghpvc/?username=Terryc21&repo=bug-prospector&label=visitors&color=blue) ![GitHub stars](https://img.shields.io/github/stars/Terryc21/bug-prospector?style=flat) ![GitHub forks](https://img.shields.io/github/forks/Terryc21/bug-prospector?style=flat)
+
 Mine for hidden bugs that pattern-based auditors miss.
 
 ## What It Does
