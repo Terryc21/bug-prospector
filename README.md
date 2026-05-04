@@ -60,6 +60,8 @@ Reports are written to `.agents/research/YYYY-MM-DD-bug-prospector-*.md` with:
 
 **Terminal-adaptive tables:** Detects terminal width before rendering. Wide terminals (160+ columns) get the full 8-column table inline. Narrow terminals get a compact 4-column table with the full table written to the report file.
 
+A complete sample report — 4 BUG findings, 2 FRAGILE, 3 OK, 1 REVIEW across 4 lenses — is at [`skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md`](skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md). It demonstrates the full output format including detailed findings with current code + suggested fix for each, plus the FRAGILE classification (works now, breaks later) and the Already-Guarded reference list.
+
 ## Fix Workflow
 
 After the report, you can fix bugs immediately. Fixes are grouped into phases:
