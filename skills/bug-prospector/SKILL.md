@@ -2,8 +2,8 @@
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
 version: 1.1.0
-author: Terry Nyberg
-license: MIT
+author: Terry Nyberg, Coffee & Code LLC
+license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
 metadata:
   tier: analysis
