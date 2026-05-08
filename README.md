@@ -149,7 +149,7 @@ The right way to use any audit skill: treat findings as leads to investigate, no
 
 ## Other Claude Code skills I've built
 
-- [code-smarter](https://github.com/Terryc21/code-smarter) — turns a file from your project into an annotated tutorial with vocabulary, quizzes, and gap analysis. Works for any language.
+- [tutorial-creator](https://github.com/Terryc21/tutorial-creator) — turns a file from your project into an annotated tutorial with vocabulary, quizzes, and gap analysis. Works for any language.
 - [prompter](https://github.com/Terryc21/prompter) — rewrites your Claude Code prompt for clarity and fixes typos before acting.
 - [bug-echo](https://github.com/Terryc21/bug-echo) — after you fix a bug, scans the codebase for sibling instances of the same pattern.
 - [workflow-audit](https://github.com/Terryc21/workflow-audit) — 5-layer audit of SwiftUI user flows. Finds dead ends, dismiss traps, and unwired features.
