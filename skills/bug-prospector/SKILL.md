@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.0.0
+version: 1.1.0
 author: Terry Nyberg
 license: MIT
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -50,6 +50,31 @@ If "Commit first": Ask for a commit message, stage changed files, and commit. Th
 ### Freshness
 
 Base all findings on current source code only. Do not read or reference files in `.agents/`, `scratch/`, or prior audit reports. Ignore cached findings from auto-memory or previous sessions. Every finding must come from scanning the actual codebase as it exists now.
+
+---
+
+## Step 0: Confirm platform context
+
+Before any lens runs, establish whether the codebase targets a single platform or multiple platforms. This is non-negotiable: every lens needs to know which `#if os(...)` blocks count as "live code" and which to skip.
+
+```
+AskUserQuestion with questions:
+[
+  {
+    "question": "What platforms does this project ship to?",
+    "header": "Platform",
+    "options": [
+      {"label": "iOS only", "description": "Skip findings inside #if os(macOS) / #if os(watchOS) / #if os(tvOS) blocks"},
+      {"label": "macOS only", "description": "Skip findings inside #if os(iOS) / #if os(watchOS) / #if os(tvOS) blocks"},
+      {"label": "Universal (iOS + macOS)", "description": "All non-iOS-only and non-macOS-only blocks count; honor #if conditionals for cross-platform consistency"},
+      {"label": "Other / multi-platform", "description": "I'll describe the platform set"}
+    ],
+    "multiSelect": false
+  }
+]
+```
+
+Record the answer. Every subsequent lens MUST honor it during classification (see Step 3, rule 7).
 
 ---
 
@@ -353,22 +378,24 @@ Grep pattern="CIContext\|MTLDevice\|MTLCreateSystemDefaultDevice" glob="**/*.swi
 
 Before classifying ANY finding:
 
-1. **Read the flagged file** — at minimum 30 lines around the issue
+1. **Read the flagged file** — at minimum 30 lines around the issue. Read enough to capture any enclosing `#if os(...)` block, even if that means widening the window beyond 30 lines.
 2. **Check for existing guards** — the assumption may already be protected
 3. **Check for intentional design** — comments, documentation, or clear architectural decisions
 4. **Check if it's actually reachable** — dead code or unreachable paths are not bugs
 5. **Assess real-world likelihood** — theoretical issues in impossible scenarios are not bugs
 6. **Count blast radius** — grep for callers/references of the affected function or property to determine how many files the fix would touch
-7. **Classify** as:
-   - **BUG:** Real risk, no guard, realistic scenario
+7. **Honor the platform context from Step 0.** If the match sits inside a `#if os(X)` block where X is NOT in the project's declared platform set, the finding is OK (excluded by build), not BUG. Example: on an iOS-only project, code inside `#if os(macOS)` is dead from the project's perspective and must not be flagged. On a Universal project, code inside `#if os(iOS)` is live for iOS but excluded for macOS — flag the finding only if the bug condition can occur on a platform that DOES include the block.
+8. **Classify** as:
+   - **BUG:** Real risk, no guard, realistic scenario, on a platform the project ships to
    - **FRAGILE:** Works now but will break under foreseeable conditions
-   - **OK:** Already guarded or intentional design
+   - **OK:** Already guarded, intentional design, OR excluded by `#if` conditional from the project's platform set
    - **REVIEW:** Unclear, needs human judgment
 
 **Classification rules:**
 - A finding is NOT a bug if the code already handles the case (even if the handling is in a different function)
 - A finding is NOT a bug if the scenario requires conditions that the app's architecture prevents
-- A finding IS a bug if a real user could trigger it through normal usage
+- A finding is NOT a bug if it sits inside an `#if os(...)` block excluded from the project's platform set (Step 0)
+- A finding IS a bug if a real user on a shipping platform could trigger it through normal usage
 - A finding is FRAGILE if it works today but depends on an assumption that could change
 
 ---
@@ -480,6 +507,16 @@ These were flagged by search but are correctly handled:
 ## Needs Human Review
 These findings require domain knowledge to classify:
 - file.swift:456 — [what's unclear and why]
+
+## After You Fix These Findings
+
+bug-prospector finds bug *patterns*. After you fix any BUG finding above, run [bug-echo](https://github.com/Terryc21/bug-echo) on the fix to find sibling instances of the same pattern elsewhere in the codebase:
+
+```
+/bug-echo
+```
+
+bug-echo infers the anti-pattern from your fix's diff, validates it against the pre-fix file, then scans for matches. Bugs that haven't fired yet but share the same shape are the highest-ROI catches in any audit cycle. Run bug-prospector to find the first instance; run bug-echo to close the bug class.
 ```
 
 ---
