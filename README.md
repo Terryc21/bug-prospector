@@ -2,6 +2,8 @@
 
 **A Claude Code skill that finds bugs in code that compiles fine, passes tests, and looks right but breaks the moment a real user does something unexpected.**
 
+> **Companion:** [bug-echo](https://github.com/Terryc21/bug-echo) — runs *after* a fix to find sibling instances of the same bug pattern. The two skills cover opposite halves of the bug-finding loop.
+
 Built while shipping [Stuffolio](https://stuffolio.app), an iOS/macOS app I work on every day. Free, open source, no paid tier, no referral links.
 
 <a href="https://buymeacoffee.com/stuffolio"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="120"></a>
@@ -61,6 +63,20 @@ Two commands in Claude Code:
 Run them one at a time and wait for the first to confirm before running the second.
 
 That's it. The skill is now available everywhere you use Claude Code.
+
+### Optional: install bug-echo alongside
+
+bug-prospector runs before a fix. [bug-echo](https://github.com/Terryc21/bug-echo) runs after one — same workflow loop, opposite end. Most users want both:
+
+```
+/plugin marketplace add Terryc21/bug-echo
+```
+
+```
+/plugin install bug-echo@bug-echo
+```
+
+After installing, run `/bug-prospector` before releases (forward-looking audit) and `/bug-echo` after each bug fix (sibling scan).
 
 ---
 
