@@ -140,6 +140,8 @@ Reports go to `.agents/research/YYYY-MM-DD-bug-prospector-*.md` in your project.
 
 A complete sample report (4 BUG findings, 2 FRAGILE, 3 OK, 1 REVIEW across 4 lenses) is here: [example output](skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md).
 
+A lighter second example showing the **Quick 3** preset on a single TypeScript file (an auth middleware audit before opening a PR): [quick-scan example](skills/bug-prospector/examples/quick-scan-auth-middleware.md). Useful for understanding the focused, single-file workflow alongside the heavier multi-lens audit.
+
 The report doesn't change your code. You decide which findings to fix.
 
 ---
