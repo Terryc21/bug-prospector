@@ -31,6 +31,21 @@ The short version: **linters find code that looks wrong. bug-prospector finds co
 
 ---
 
+## bug-prospector vs. bug-echo — which should you use?
+
+Both have "bug" in the name; they answer different questions and run at different times.
+
+| | bug-prospector | [bug-echo](https://github.com/Terryc21/bug-echo) |
+|---|---|---|
+| **When you run it** | Before a release, after a crash report, during exploration | Right after you fix a bug |
+| **What it asks** | "What could go wrong?" | "Where else does this exact thing live?" |
+| **What it needs** | Just code | The diff of a fix you just committed |
+| **Pattern source** | 7 forward-looking lenses (assumptions, state machines, boundaries, lifecycle, errors, time, platform) | The pattern is inferred from your actual diff and validated against the pre-fix file |
+
+Many people run both — bug-prospector before releases, bug-echo after every bug fix. They complement each other.
+
+---
+
 ## Install
 
 Two commands in Claude Code:
