@@ -1,6 +1,6 @@
 # bug-prospector
 
-![Last commit](https://img.shields.io/github/last-commit/Terryc21/bug-prospector) ![Stars](https://img.shields.io/github/stars/Terryc21/bug-prospector?style=flat) ![Issues](https://img.shields.io/github/issues/Terryc21/bug-prospector) ![License](https://img.shields.io/github/license/Terryc21/bug-prospector) ![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-blueviolet)
+![Version](https://img.shields.io/github/v/tag/Terryc21/bug-prospector?label=version) ![Last commit](https://img.shields.io/github/last-commit/Terryc21/bug-prospector) ![Stars](https://img.shields.io/github/stars/Terryc21/bug-prospector?style=flat) ![Issues](https://img.shields.io/github/issues/Terryc21/bug-prospector) ![License](https://img.shields.io/github/license/Terryc21/bug-prospector) ![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-blueviolet)
 
 **A Claude Code skill that finds bugs in code that compiles fine, passes tests, and looks right but breaks the moment a real user does something unexpected.**
 
@@ -9,6 +9,8 @@
 bug-prospector and pattern-based linters are complementary, not competitive: linters check *how your code is written* against a rule catalog; bug-prospector checks *what your code assumes* against 7 forward-looking lenses. **A thorough audit uses both.**
 
 Built while shipping [Stuffolio](https://stuffolio.app), an iOS/macOS app currently at build 33. Free, open source, Apache 2.0.
+
+*~6 min read · scan the TL;DR if you only have 30 seconds*
 
 ## TL;DR
 
@@ -142,6 +144,20 @@ You usually don't need all 7 every time. The right combination depends on what y
 | Adding support for a new platform | Platform + Boundaries |
 | Changing your data model | Data lifecycle + Assumptions |
 
+## Scoping a run
+
+bug-prospector scopes by **lens selection + scope picker**. The two dimensions are independent: you pick *what to look at* (recent changes / a specific file or feature / the whole codebase) and *which lenses to apply* (quick 3 / all 7 / custom subset).
+
+| Goal | Command |
+|---|---|
+| First run — lightest possible | `/bug-prospector quick` (3 lenses on recent changes) |
+| Full pre-release audit | `/bug-prospector all` (7 lenses on the whole project) |
+| Interactive scope + lens picker | `/bug-prospector` (asks both questions) |
+| Focus on one file or feature | `/bug-prospector` then pick "single file or directory" when prompted |
+| Use a specific lens combo | `/bug-prospector` then pick "custom lenses" |
+
+**Fresh vs prior history.** Every bug-prospector run is fresh — the skill reads your current code and applies the 7 lenses from scratch. There's no resume mode and no diff-against-prior-report mode (workflow-audit's `--diff` is the closest analog in the family). Prior reports live in `.agents/research/` and can be compared by hand. If a finding shows up on three consecutive runs and you've decided it's a false positive for your codebase, document it in the lens-specific section of your project's CLAUDE.md so the skill knows to skip it next time; the skill respects context-rich guidance in CLAUDE.md when classifying findings.
+
 ## Output format
 
 Reports go to `.agents/research/YYYY-MM-DD-bug-prospector-*.md` in your project. Standard format across the radar/audit ecosystem:
@@ -191,27 +207,26 @@ Treat findings as leads to investigate, not items to fix blindly. Verify critica
 
 **Where to look for the bugs bug-prospector won't find:** pattern-based linters (SwiftLint, etc.) catch the single-file style violations; [bug-echo](https://github.com/Terryc21/bug-echo) catches sibling instances after a fix; runtime profiling (Instruments, sanitizers) catches concurrency and memory issues; targeted unit tests catch business-logic correctness. bug-prospector covers the forward-looking-assumptions slot in that picture.
 
-## Other Claude Code skills
-
-Companion tools built on the same shipping-real-software loop:
-
-- [**bug-echo**](https://github.com/Terryc21/bug-echo) — runs *after* a fix; sibling-instance scan. Companion skill.
-- [**radar-suite**](https://github.com/Terryc21/radar-suite) — 6 audit skills for iOS/macOS Swift codebases. Covers data models, time-bomb code, navigation, backup/restore, visual quality, plus a capstone aggregator.
-- [**workflow-audit**](https://github.com/Terryc21/workflow-audit) — 5-layer audit of SwiftUI user flows. Finds dead ends, dismiss traps, and unwired features.
-- [**tutorial-creator**](https://github.com/Terryc21/tutorial-creator) — turns a file from your project into an annotated tutorial with vocabulary, quizzes, and gap analysis. Works for any language.
-- [**unforget**](https://github.com/Terryc21/unforget) — consolidates deferred work into one structured file.
-- [**prompter**](https://github.com/Terryc21/prompter) — rewrites your Claude Code prompt for clarity and fixes typos before acting.
-
-All free, all Apache 2.0, all built while shipping Stuffolio.
-
 ## Deeper documentation
 
 The previous, more detailed README is preserved as [README-detailed.md](README-detailed.md). The full methodology lives in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md), including how bug-prospector pairs with [Workflow Audit](https://github.com/Terryc21/workflow-audit).
 
-## License
+## Sibling skills
 
-Apache 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+- [**bug-echo**](https://github.com/Terryc21/bug-echo) — sibling-bug scan after a fix; companion skill
+- [**workflow-audit**](https://github.com/Terryc21/workflow-audit) — 5-layer SwiftUI flow audit
+- [**unforget**](https://github.com/Terryc21/unforget) — one-file deferred-work ledger
+- [**radar-suite**](https://github.com/Terryc21/radar-suite) — 6-skill iOS audit family
+- [**prompter**](https://github.com/Terryc21/prompter) — prompt rewriting before execution
+- [**skill-reviewer**](https://github.com/Terryc21/skill-reviewer) — candid reviews of other Claude Code skills
+- [**tutorial-creator**](https://github.com/Terryc21/tutorial-creator) — annotated tutorials from your codebase
 
 ## Author
 
-Terry Nyberg, [Coffee & Code LLC](https://stuffolio.app/). If bug-prospector catches a real bug for you, [a coffee](https://buymeacoffee.com/stuffolio) is appreciated. Issue reports about what worked or didn't are even more useful.
+Terry Nyberg, [Coffee & Code LLC](https://stuffolio.app/). If bug-prospector catches a real bug for you, [a coffee](https://buymeacoffee.com/stuffolio) is appreciated. Issue reports about what worked or didn't are more useful.
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/stuffolio)
+
+## License
+
+Apache 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
