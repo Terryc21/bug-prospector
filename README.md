@@ -8,7 +8,7 @@
 
 bug-prospector and pattern-based linters are complementary, not competitive: linters check *how your code is written* against a rule catalog; bug-prospector checks *what your code assumes* against 7 forward-looking lenses. **A thorough audit uses both.**
 
-Built while shipping [Stuffolio](https://stuffolio.app), an iOS/macOS app currently at build 33. Free, open source, Apache 2.0.
+Built while shipping [Stuffolio](https://stuffolio.app), an iOS/macOS app, through real App Store submission cycles. bug-prospector itself is free, open source, Apache 2.0.
 
 *~6 min read · scan the TL;DR if you only have 30 seconds*
 
