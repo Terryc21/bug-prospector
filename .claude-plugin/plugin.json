@@ -1,11 +1,11 @@
 {
   "name": "bug-prospector",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Mine for hidden bugs that pattern-based auditors miss — logic errors, broken assumptions, state machine gaps, and semantic fragility",
   "author": {
     "name": "Terry Nyberg"
   },
   "repository": "https://github.com/Terryc21/bug-prospector",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": ["bugs", "debugging", "analysis", "assumptions", "logic-errors", "ios", "swift"]
 }

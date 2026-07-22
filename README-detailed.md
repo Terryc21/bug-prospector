@@ -93,4 +93,4 @@ For how Bug Prospector differs from pattern-based tools (linters, compiler warni
 
 ## License
 
-MIT
+Apache 2.0. See [LICENSE](LICENSE).
