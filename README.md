@@ -19,7 +19,7 @@ Built while shipping [Stuffolio](https://stuffolio.app), an iOS/macOS app, throu
 - **Install:** Two `/plugin` commands in Claude Code; then `/bug-prospector` is available in any project.
 - **Try first:** `/bug-prospector quick` runs 3 of 7 lenses (Assumptions + Errors + Boundaries) on your recent changes. Light, fast, real report.
 - **Example output:** [a real backup-manager audit on Stuffolio](skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md) (4 BUG findings, 4 lenses). Also: [quick-scan on TypeScript](skills/bug-prospector/examples/quick-scan-auth-middleware.md).
-- **Maturity:** Used through real App Store submission cycles. Swift/SwiftUI is where it's deepest; other languages work, with a caveat in Honest limits below.
+- **Maturity:** Used through real App Store submission cycles. Runs on any language; Swift/SwiftUI is where it's deepest (see Honest limits).
 
 ## The kind of bug this finds
 
@@ -172,7 +172,7 @@ This skill is a tool, not an oracle. A few things to keep in mind:
 - False positives happen. A lens may flag a state-machine concern in code that's intentionally simple.
 - False negatives happen. Bugs whose pattern doesn't fit any of the 7 lenses won't get caught.
 - It can't run your code. It reads your code and reasons about it. Some bugs only show up at runtime; static reasoning has limits.
-- **The lenses are language-neutral; the plumbing is Swift-tagged.** The search shortcuts and the scope picker both filter on `*.swift`. On another language, hand it a path — `/bug-prospector quick src/auth.ts` — and the lenses work normally. Let it pick the scope itself and it will find nothing and say so, rather than reporting a clean run. Widening this is on the list.
+- **Deepest on Swift.** The scope picker detects your language, so runs work anywhere. But the 34 search shortcuts are Swift syntax — on other languages they mostly miss, and the lenses work unaided by reading files. Slower, less complete, and a shortcut finding nothing is never evidence your code is clean. The report header says when this applies.
 
 Treat findings as leads to investigate, not items to fix blindly. Verify critical findings before committing.
 

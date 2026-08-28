@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.2.7
+version: 1.3.0
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -159,6 +159,71 @@ Step 0 (platform context) still runs regardless of arguments: no invocation form
 
 ---
 
+## Step 0.6: Resolve the source glob
+
+Every scope path and every search accelerator below filters on a file glob. **Resolve it once, here, and substitute it everywhere** — the placeholder `$SOURCE_GLOB` in the rest of this file means the value you resolve now.
+
+**Default: `**/*.swift`.** Swift is where this skill's accelerators and lens examples are deepest. Do not change the default speculatively — change it when the project is measurably not Swift.
+
+**Resolution order, first match wins:**
+
+1. **An explicit path from Step 0.5 names a file.** Take its extension. `/bug-prospector quick src/auth.ts` → `**/*.{ts,tsx}`.
+2. **Count what the repo actually contains:**
+
+```bash
+git ls-files | sed -n 's/.*\.\([a-zA-Z0-9]*\)$/\1/p' | sort | uniq -c | sort -rn | head -10
+```
+
+3. **Map the dominant source extension** to a glob, pairing extensions that travel together:
+
+| Dominant | `$SOURCE_GLOB` |
+|---|---|
+| `swift` | `**/*.swift` |
+| `ts` / `tsx` | `**/*.{ts,tsx}` |
+| `js` / `jsx` | `**/*.{js,jsx,mjs}` |
+| `py` | `**/*.py` |
+| `go` | `**/*.go` |
+| `rs` | `**/*.rs` |
+| `kt` / `java` | `**/*.{kt,java}` |
+| anything else | `**/*.<ext>` for the dominant one |
+
+Ignore `md`, `json`, `yml`, `lock`, and image extensions when picking the dominant one — they are never the source under audit.
+
+🛑 **Git and Grep need DIFFERENT forms of this glob. Resolve both.**
+
+`git` pathspec does not expand brace groups; `ripgrep` (behind the Grep tool) does. The same string in both places silently matches nothing in one of them:
+
+```bash
+git diff --name-only HEAD~5 -- "**/*.{ts,tsx}"    # matches 0 files — brace not expanded
+git diff --name-only HEAD~5 -- "*.ts" "*.tsx"     # matches correctly — separate pathspecs
+```
+
+So carry two values:
+
+- **`$SOURCE_GLOB`** — the brace form, for the `Grep` and `Glob` tools: `**/*.{ts,tsx}`
+- **`$SOURCE_PATHSPEC`** — space-separated quoted args, for `git` commands: `"*.ts" "*.tsx"`
+
+For a single-extension language the two are `**/*.swift` and `"*.swift"`. The distinction only bites on multi-extension globs, which is exactly where it would go unnoticed.
+
+**Announce it with the run** (extending the Step 0.5 line):
+
+> Running **Quick 3** on **files changed in the last 5 commits**, matching `**/*.{ts,tsx}`.
+
+### 🛑 On a non-Swift project, the accelerators are advisory
+
+The 34 `Grep` patterns in Step 2 are written in **Swift syntax** — `@Published`, `try?`, `#if os(`, `@Query`. Substituting `$SOURCE_GLOB` makes them run against other languages; it does not translate them. Most will match nothing on TypeScript or Python, and **a zero-match accelerator is not evidence of a clean lens.**
+
+So when `$SOURCE_GLOB` is not `**/*.swift`:
+
+- **Read the files.** Step 2 already requires reading each file completely before analysis; on a non-Swift project that reading IS the analysis, not a supplement to grep.
+- **Treat every accelerator miss as uninformative**, never as a finding of "none."
+- **Translate the concept, not the token.** The Error Path lens asks what happens when an error path is taken — in TypeScript that is `catch`, `.catch()`, and an unawaited promise, not `try?`. Apply the lens's *goal* (stated at the top of each lens) rather than its pattern list.
+- **Say so in the report header:** `Accelerators: Swift-tagged, advisory on this project (source glob `**/*.{ts,tsx}`).`
+
+This is a real limit, not a formality. bug-prospector is deepest on Swift; on other languages the lenses carry the analysis unaided.
+
+---
+
 ## Step 1: Choose Scope and Lenses
 
 ### 1.1: Determine Scope
@@ -185,10 +250,11 @@ AskUserQuestion with questions:
 
 **If "Recently changed files":**
 ```bash
-git diff --name-only HEAD~5 -- "*.swift" | head -30
+git diff --name-only HEAD~5 -- $SOURCE_PATHSPEC | head -30
+# $SOURCE_PATHSPEC, not $SOURCE_GLOB — git does not expand braces (Step 0.6)
 ```
 
-**If "Full codebase":** Use `Glob pattern="**/*.swift"` to inventory, then prioritize:
+**If "Full codebase":** Use `Glob pattern="$SOURCE_GLOB"` to inventory, then prioritize:
 1. ViewModels and Managers (business logic)
 2. Data layer (persistence, sync, networking)
 3. Views with complex state (forms, multi-step flows)
@@ -196,13 +262,15 @@ git diff --name-only HEAD~5 -- "*.swift" | head -30
 
 #### Empty-scope guard (applies to every scope path, including a Step 0.5 explicit path)
 
-🛑 **A scope that resolves to zero files is a STOP, never a clean run.** Both paths above filter on `*.swift`. On a project in another language they return nothing, and a report generated from zero files reads exactly like a report from a codebase with no bugs — the user is told they are fine when nothing was examined.
+🛑 **A scope that resolves to zero files is a STOP, never a clean run.** A report generated from zero files reads exactly like a report from a codebase with no bugs — the user is told they are fine when nothing was examined.
+
+Step 0.6 makes this rarer than it was, but not impossible: a `$SOURCE_PATHSPEC` used where `$SOURCE_GLOB` was meant, a `HEAD~5` window with no source changes in it, or a path that resolves to a directory of assets.
 
 **Count the resolved files before any lens runs.** If the count is 0:
 
 1. **Do not proceed to Step 2.** No lenses, no report, no `.agents/` file.
-2. **Say what resolved to nothing**, naming the filter — "`git diff HEAD~5 -- "*.swift"` matched 0 files" is actionable; "no findings" is not.
-3. **Check whether the project has source in another language** before concluding it is empty:
+2. **Say what resolved to nothing**, naming the actual filter used — "`git diff HEAD~5 -- "*.ts" "*.tsx"` matched 0 files" is actionable; "no findings" is not.
+3. **Re-check the extension census** from Step 0.6 — if the dominant extension does not match the glob you resolved, the resolution was wrong, not the codebase:
 
 ```bash
 git ls-files | sed -n 's/.*\.\([a-zA-Z0-9]*\)$/\1/p' | sort | uniq -c | sort -rn | head -10
@@ -210,7 +278,7 @@ git ls-files | sed -n 's/.*\.\([a-zA-Z0-9]*\)$/\1/p' | sort | uniq -c | sort -rn
 
 4. **Report what you found and let the user choose:**
 
-> Scope resolved to **0 files** — the `*.swift` filter matched nothing. This project's source looks like **.ts (214), .tsx (89), .json (31)**. bug-prospector's search accelerators are Swift-tagged, but the 7 lenses are language-neutral and work on any file passed as an explicit path. Re-run as `/bug-prospector quick <path>` to analyze a specific file or directory.
+> Scope resolved to **0 files** — `git diff HEAD~5 -- "*.ts" "*.tsx"` matched nothing. The last 5 commits touched only `.json` and `.md`. Widen the window, or re-run against a path: `/bug-prospector quick src/`.
 
 A missed accelerator costs speed. An empty scope reported as a clean run costs the user's trust in every future run — that is why this one stops.
 
@@ -291,11 +359,11 @@ For each file in scope, apply the selected lenses. Read the full file before ana
 
 **Search accelerators** (grep for common assumption patterns):
 ```
-Grep pattern="\.first!" glob="**/*.swift"
-Grep pattern="\.last!" glob="**/*.swift"
-Grep pattern="\[0\]" glob="**/*.swift"
-Grep pattern="\.removeFirst\(\)" glob="**/*.swift"
-Grep pattern="as!" glob="**/*.swift"
+Grep pattern="\.first!" glob="$SOURCE_GLOB"
+Grep pattern="\.last!" glob="$SOURCE_GLOB"
+Grep pattern="\[0\]" glob="$SOURCE_GLOB"
+Grep pattern="\.removeFirst\(\)" glob="$SOURCE_GLOB"
+Grep pattern="as!" glob="$SOURCE_GLOB"
 ```
 
 ### Lens 2: State Machine Analysis
@@ -318,10 +386,10 @@ Grep pattern="as!" glob="**/*.swift"
 
 **Search accelerators:**
 ```
-Grep pattern="@State.*=.*true" glob="**/*.swift"
-Grep pattern="@Published.*=.*true" glob="**/*.swift"
-Grep pattern="isLoading|isProcessing|isSaving|isAnalyzing" glob="**/*.swift"
-Grep pattern="showingError|showingAlert|showingSheet" glob="**/*.swift"
+Grep pattern="@State.*=.*true" glob="$SOURCE_GLOB"
+Grep pattern="@Published.*=.*true" glob="$SOURCE_GLOB"
+Grep pattern="isLoading|isProcessing|isSaving|isAnalyzing" glob="$SOURCE_GLOB"
+Grep pattern="showingError|showingAlert|showingSheet" glob="$SOURCE_GLOB"
 ```
 
 ### Lens 3: Boundary Conditions
@@ -345,11 +413,11 @@ Grep pattern="showingError|showingAlert|showingSheet" glob="**/*.swift"
 
 **Search accelerators:**
 ```
-Grep pattern="\.remove(First|Last)\(\)" glob="**/*.swift"
-Grep pattern="\.\[.*\]" glob="**/*.swift"
-Grep pattern="\.prefix\(|\.suffix\(" glob="**/*.swift"
-Grep pattern="\.split\(|\.components\(" glob="**/*.swift"
-Grep pattern="Int\.max|\.count\s*-\s*1" glob="**/*.swift"
+Grep pattern="\.remove(First|Last)\(\)" glob="$SOURCE_GLOB"
+Grep pattern="\.\[.*\]" glob="$SOURCE_GLOB"
+Grep pattern="\.prefix\(|\.suffix\(" glob="$SOURCE_GLOB"
+Grep pattern="\.split\(|\.components\(" glob="$SOURCE_GLOB"
+Grep pattern="Int\.max|\.count\s*-\s*1" glob="$SOURCE_GLOB"
 ```
 
 ### Lens 4: Data Lifecycle Tracing
@@ -373,11 +441,11 @@ Grep pattern="Int\.max|\.count\s*-\s*1" glob="**/*.swift"
 
 **Search accelerators:**
 ```
-Grep pattern="context\.insert\(" glob="**/*.swift"
-Grep pattern="context\.delete\(" glob="**/*.swift"
-Grep pattern="context\.save\(" glob="**/*.swift"
-Grep pattern="\.deleteRule\s*=" glob="**/*.swift"
-Grep pattern="@Query" glob="**/*.swift"
+Grep pattern="context\.insert\(" glob="$SOURCE_GLOB"
+Grep pattern="context\.delete\(" glob="$SOURCE_GLOB"
+Grep pattern="context\.save\(" glob="$SOURCE_GLOB"
+Grep pattern="\.deleteRule\s*=" glob="$SOURCE_GLOB"
+Grep pattern="@Query" glob="$SOURCE_GLOB"
 ```
 
 ### Lens 5: Error Path Exerciser
@@ -404,10 +472,10 @@ Grep pattern="@Query" glob="**/*.swift"
 
 **Search accelerators:**
 ```
-Grep pattern="try\?" glob="**/*.swift"
-Grep pattern="catch\s*\{" glob="**/*.swift" -A 3
-Grep pattern="guard let.*else\s*\{\s*return\s*\}" glob="**/*.swift"
-Grep pattern="Task\s*\{" glob="**/*.swift" -A 5
+Grep pattern="try\?" glob="$SOURCE_GLOB"
+Grep pattern="catch\s*\{" glob="$SOURCE_GLOB" -A 3
+Grep pattern="guard let.*else\s*\{\s*return\s*\}" glob="$SOURCE_GLOB"
+Grep pattern="Task\s*\{" glob="$SOURCE_GLOB" -A 5
 ```
 
 ### Lens 6: Time-Dependent Bugs
@@ -436,11 +504,11 @@ Grep pattern="Task\s*\{" glob="**/*.swift" -A 5
 
 **Search accelerators:**
 ```
-Grep pattern="DateFormatter\(\)" glob="**/*.swift"
-Grep pattern="Date\(\)" glob="**/*.swift"
-Grep pattern="timeIntervalSince" glob="**/*.swift"
-Grep pattern="URLSession.*dataTask|URLSession.*data\(" glob="**/*.swift"
-Grep pattern="\.debounce|\.throttle" glob="**/*.swift"
+Grep pattern="DateFormatter\(\)" glob="$SOURCE_GLOB"
+Grep pattern="Date\(\)" glob="$SOURCE_GLOB"
+Grep pattern="timeIntervalSince" glob="$SOURCE_GLOB"
+Grep pattern="URLSession.*dataTask|URLSession.*data\(" glob="$SOURCE_GLOB"
+Grep pattern="\.debounce|\.throttle" glob="$SOURCE_GLOB"
 ```
 
 ### Lens 7: Platform Divergence
@@ -469,12 +537,12 @@ Grep pattern="\.debounce|\.throttle" glob="**/*.swift"
 
 **Search accelerators:**
 ```
-Grep pattern="#if os\(" glob="**/*.swift"
-Grep pattern="#available\(" glob="**/*.swift"
-Grep pattern="UIScreen\.main" glob="**/*.swift"
-Grep pattern="UIDevice\.current" glob="**/*.swift"
-Grep pattern="ProcessInfo.*physicalMemory|ProcessInfo.*processorCount" glob="**/*.swift"
-Grep pattern="CIContext|MTLDevice|MTLCreateSystemDefaultDevice" glob="**/*.swift"
+Grep pattern="#if os\(" glob="$SOURCE_GLOB"
+Grep pattern="#available\(" glob="$SOURCE_GLOB"
+Grep pattern="UIScreen\.main" glob="$SOURCE_GLOB"
+Grep pattern="UIDevice\.current" glob="$SOURCE_GLOB"
+Grep pattern="ProcessInfo.*physicalMemory|ProcessInfo.*processorCount" glob="$SOURCE_GLOB"
+Grep pattern="CIContext|MTLDevice|MTLCreateSystemDefaultDevice" glob="$SOURCE_GLOB"
 ```
 
 ---
