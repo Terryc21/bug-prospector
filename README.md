@@ -164,7 +164,7 @@ bug-prospector scopes by **lens selection + scope picker**. The two dimensions a
 Reports go to `.agents/research/YYYY-MM-DD-bug-prospector-*.md` in your project. Standard format across the radar/audit ecosystem:
 
 - File and line citations for every claim
-- Rating table: finding, lens, urgency, risk-of-fix, risk-of-no-fix, ROI, blast radius, fix effort, confidence — 9 columns, plus two conditional ones below
+- Rating table: row number, finding, lens, urgency, risk-of-fix, risk-of-no-fix, ROI, blast radius, fix effort, confidence — 10 columns, plus two conditional ones below
 - **1-Star Risk** column, added only when the project ships to a public app store (inferred from the platform question; a backend or library run skips it)
 - **Status** column (Open / Fixed / Deferred / Skipped), added when findings are re-displayed during the fix workflow
 - Detailed findings with the current code and a suggested fix

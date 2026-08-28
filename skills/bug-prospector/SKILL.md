@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.2.5
+version: 1.2.6
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -68,7 +68,9 @@ If "Commit first": Ask for a commit message, stage changed files, and commit. Th
 
 ### Freshness
 
-Base all findings on current source code only. Do not read or reference files in `.agents/`, `scratch/`, or prior audit reports. Ignore cached findings from auto-memory or previous sessions. Every finding must come from scanning the actual codebase as it exists now.
+Base all findings on current source code only. **Never use a prior report as a source of findings** — not files in `.agents/`, not `scratch/`, not cached findings from auto-memory or previous sessions. Every finding must come from scanning the actual codebase as it exists now. A finding carried forward from an earlier run has not been re-verified against code that may since have changed.
+
+**One exception, and it is not a findings source:** before writing the report, check whether the target filename already exists in `.agents/research/`. The name carries only a date and scope, so a second run on the same scope the same day would otherwise overwrite the first without a word. If it exists, say so and write alongside it with a numeric suffix rather than replacing it.
 
 ---
 
@@ -513,14 +515,18 @@ Before rendering the report, check terminal width:
 tput cols
 ```
 
-The full table is 9 columns, plus 1-Star Risk when store-distributed and Status on re-display — so 9 to 11 depending on the run. Budget ~180 columns for the widest form.
+The full table is 10 columns (`#` through Confidence), plus 1-Star Risk when store-distributed and Status on re-display — so 10 to 12 depending on the run. Budget ~180 columns for the widest form. Count the pipes in the header below rather than trusting this sentence; it was wrong by one for four releases.
 
 - **180+ columns:** Use the **full table** inline and in the report file.
 - **Under 180 columns:** Use the **compact 4-column table** inline, write the **full table** to the report file only. Display this notice after the inline table:
 
 > **Compact view** — your terminal is [N] columns wide (180+ needed for the full table). The complete Issue Rating Table with all [K] columns has been written to `.agents/research/YYYY-MM-DD-bug-prospector-<scope>.md`. Open that file or widen your terminal to 180+ columns to view it as a single table.
 
-If `tput cols` fails or returns exactly 80 (the default when output is not a TTY, which is the common case when this skill runs), do not silently take the compact path — ask the user which width to render.
+**If `tput cols` fails or returns exactly 80** — the default when output is not a TTY, which is the common case when this skill runs — the width is unknown, not narrow. Take the compact path and say why, in one line:
+
+> Terminal width unknown (`tput cols` reported the non-TTY default). Showing the compact table inline; the full [K]-column table is in the report file.
+
+Do not prompt for a width. The user cannot usefully answer a question about their column count, the full table is written to the report file on every path regardless, and a prompt on the common path taxes every run to change only which of two tables renders inline. If the user wants the full table inline, they can say so and you re-render it.
 
 ### 4.2: Render Report
 
@@ -550,7 +556,7 @@ The **report file** always uses the full table regardless of terminal width.
 All BUG and FRAGILE findings rated and sorted by Urgency then ROI:
 ```
 
-**Full table (180+ columns) — used inline AND in report file.** The 10th column is **1-Star Risk**, included ONLY when Step 0 recorded *store-distributed: yes*:
+**Full table (180+ columns) — used inline AND in report file.** The 11th column is **1-Star Risk**, included ONLY when Step 0 recorded *store-distributed: yes*:
 
 | # | Finding | Lens | Urgency | Risk: Fix | Risk: No Fix | ROI | Blast Radius | Fix Effort | Confidence | 1-Star Risk |
 |---|---------|------|---------|-----------|-------------|-----|-------------|------------|------------|-------------|
@@ -560,7 +566,7 @@ All BUG and FRAGILE findings rated and sorted by Urgency then ROI:
 
 **When *store-distributed: no*, drop the 1-Star Risk column entirely** — do not emit it empty or filled with ⚪. A backend service or library has no review page; the column would be dead weight in every row.
 
-**Status column (conditional, appended last).** Add a **Status** column (`Open` / `Fixed` / `Deferred` / `Skipped`) whenever the table is re-displayed after the initial report — during the fix workflow's phase gates, or in any follow-up run that revisits earlier findings. Omit it on first display, where every finding is `Open` by definition. With both conditional columns present the table runs to 11.
+**Status column (conditional, appended last).** Add a **Status** column (`Open` / `Fixed` / `Deferred` / `Skipped`) whenever the table is re-displayed after the initial report — during the fix workflow's phase gates, or in any follow-up run that revisits earlier findings. Omit it on first display, where every finding is `Open` by definition. With both conditional columns present the table runs to 12.
 
 **Compact table (under 180 columns) — used inline only:**
 

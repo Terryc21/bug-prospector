@@ -204,4 +204,4 @@ These were flagged by the search accelerators but verified to be correctly handl
 
 ---
 
-*Report generated 2026-04-29 by bug-prospector v1.0.0. Full skill documentation: [SKILL.md](../SKILL.md).*
+*Sample report in the current output format. Full skill documentation: [SKILL.md](../SKILL.md).*
