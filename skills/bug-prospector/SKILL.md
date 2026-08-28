@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.3.1
+version: 1.4.0
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -17,6 +17,15 @@ metadata:
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
 **Required output:** Every BUG finding MUST include Urgency, Risk, ROI, and Blast Radius ratings using the Issue Rating Table format. Do not omit these ratings.
+
+**Required output:** Every BUG and FRAGILE finding MUST also narrate the **user experience** — what a person hits while the bug is live, and what they get instead once it is fixed. Write it in plain user-facing language: what they see, tap, and feel. Not the mechanism, which the fields above already carry.
+
+Two rules keep this honest:
+
+- 🛑 **Findings with no visible symptom still get the field.** Say so explicitly and name what the user is protected from — a crash that never happens, data that is not silently lost, a sync that stops diverging. Invisible wins are the ones most often dropped, and they are frequently the most valuable. "No visible change; prevents X" is a complete answer.
+- 🛑 **Never invent a symptom to fill the field.** If you cannot say what the user would experience, that is a signal the finding may be theoretical — reclassify it or say plainly that the impact is unclear. A plausible-sounding invented symptom is worse than an admitted gap: it inflates the finding's apparent severity and corrupts the triage the ratings exist to support.
+
+*Why: ratings say how bad a finding is on six technical axes. None of them says what it costs the person using the app, which is the axis the fix-or-defer call is actually made on. A report that reads like a compiler diff makes that call harder, not easier.*
 
 **Philosophy:** Auditing tools find what's *syntactically wrong*. Bug Prospector finds what's *semantically fragile* — the gap between "the code compiles" and "the code handles every real-world scenario."
 
@@ -710,6 +719,10 @@ Phase numbering here is what Step 5's fix workflow walks through — the phase g
 // corrected code
 ```
 
+**User experience:**
+- **Before:** [What the user sees, taps, and feels while the bug is live]
+- **After:** [What they see instead once it is fixed]
+
 ### 2. [File:Line] — [Brief Description]
 ...
 
@@ -720,6 +733,7 @@ Phase numbering here is what Step 5's fix workflow walks through — the phase g
 **Current behavior:** [What happens now]
 **Breaking scenario:** [What foreseeable change would break this]
 **Recommendation:** [How to harden it]
+**User experience if it breaks:** [What the user would hit — the cost being pre-empted]
 
 ## Already Guarded (Reference)
 These were flagged by search but are correctly handled:
