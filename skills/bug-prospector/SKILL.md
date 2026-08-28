@@ -143,7 +143,7 @@ Record the result as **store-distributed: yes/no**. A server, library, or intern
 **Parsing rules:**
 
 - The preset is the literal token `quick` or `all`. Anything else is a scope.
-- A scope argument is a file path, directory path, or glob. Resolve it relative to the project root. If it matches nothing, say so and fall back to the Step 1.1 question rather than scanning the whole codebase — a typo'd path must never silently widen the run.
+- A scope argument is a file path, directory path, or glob. Resolve it relative to the project root. If it matches nothing, say so and fall back to the Step 1.1 question rather than scanning the whole codebase — a typo'd path must never silently widen the run. Whatever the scope resolves to, the empty-scope guard under Step 1.1 runs before any lens does.
 - `quick` and `all` are mutually exclusive. If both appear, ask which was meant; do not guess.
 - Arguments not recognized as either a preset or a resolvable path: report what was not understood, then fall through to the full interactive flow.
 
@@ -191,6 +191,26 @@ git diff --name-only HEAD~5 -- "*.swift" | head -30
 2. Data layer (persistence, sync, networking)
 3. Views with complex state (forms, multi-step flows)
 4. Skip: pure layout views, previews, test files
+
+#### Empty-scope guard (applies to every scope path, including a Step 0.5 explicit path)
+
+🛑 **A scope that resolves to zero files is a STOP, never a clean run.** Both paths above filter on `*.swift`. On a project in another language they return nothing, and a report generated from zero files reads exactly like a report from a codebase with no bugs — the user is told they are fine when nothing was examined.
+
+**Count the resolved files before any lens runs.** If the count is 0:
+
+1. **Do not proceed to Step 2.** No lenses, no report, no `.agents/` file.
+2. **Say what resolved to nothing**, naming the filter — "`git diff HEAD~5 -- "*.swift"` matched 0 files" is actionable; "no findings" is not.
+3. **Check whether the project has source in another language** before concluding it is empty:
+
+```bash
+git ls-files | sed -n 's/.*\.\([a-zA-Z0-9]*\)$/\1/p' | sort | uniq -c | sort -rn | head -10
+```
+
+4. **Report what you found and let the user choose:**
+
+> Scope resolved to **0 files** — the `*.swift` filter matched nothing. This project's source looks like **.ts (214), .tsx (89), .json (31)**. bug-prospector's search accelerators are Swift-tagged, but the 7 lenses are language-neutral and work on any file passed as an explicit path. Re-run as `/bug-prospector quick <path>` to analyze a specific file or directory.
+
+A missed accelerator costs speed. An empty scope reported as a clean run costs the user's trust in every future run — that is why this one stops.
 
 ### 1.2: Choose Lenses
 
@@ -417,8 +437,8 @@ Grep pattern="Task\s*\{" glob="**/*.swift" -A 5
 Grep pattern="DateFormatter\(\)" glob="**/*.swift"
 Grep pattern="Date\(\)" glob="**/*.swift"
 Grep pattern="timeIntervalSince" glob="**/*.swift"
-Grep pattern="URLSession.*dataTask\|URLSession.*data\(" glob="**/*.swift"
-Grep pattern="\.debounce\|\.throttle" glob="**/*.swift"
+Grep pattern="URLSession.*dataTask|URLSession.*data\(" glob="**/*.swift"
+Grep pattern="\.debounce|\.throttle" glob="**/*.swift"
 ```
 
 ### Lens 7: Platform Divergence
@@ -451,8 +471,8 @@ Grep pattern="#if os\(" glob="**/*.swift"
 Grep pattern="#available\(" glob="**/*.swift"
 Grep pattern="UIScreen\.main" glob="**/*.swift"
 Grep pattern="UIDevice\.current" glob="**/*.swift"
-Grep pattern="ProcessInfo.*physicalMemory\|ProcessInfo.*processorCount" glob="**/*.swift"
-Grep pattern="CIContext\|MTLDevice\|MTLCreateSystemDefaultDevice" glob="**/*.swift"
+Grep pattern="ProcessInfo.*physicalMemory|ProcessInfo.*processorCount" glob="**/*.swift"
+Grep pattern="CIContext|MTLDevice|MTLCreateSystemDefaultDevice" glob="**/*.swift"
 ```
 
 ---
