@@ -179,7 +179,9 @@ The report doesn't change your code. You decide which findings to fix.
 
 ### Reading the reports
 
-The rating table needs a wide terminal (~180 chars) to render as a horizontal table. In a narrower window the cells stack vertically and the report becomes harder to scan. For best readability:
+**The skill adapts to your terminal automatically.** It checks the width before rendering: 180+ columns gets the full table inline, anything narrower (or a width it can't determine) gets a compact 4-column table inline instead. **The full table is written to the report file on every path** — a compact inline view means fewer columns on screen, never fewer findings or dropped ratings.
+
+The rating table needs ~180 chars to render horizontally. In a narrower window the cells stack vertically and the report becomes harder to scan. For best readability:
 
 - **GitHub or GitLab**: open the report file in the web UI; tables render natively.
 - **Markdown viewer apps**: [Bear](https://bear.app/) (Mac/iOS, free tier; import .md as a note), [MacDown](https://macdown.uranusjr.com/) (Mac, free), [Marked 2](https://marked2app.com/) (Mac, paid) or [iA Writer](https://ia.net/writer) (Mac/iOS/Windows/Android, paid), [Obsidian](https://obsidian.md/) or [Typora](https://typora.io/) (cross-platform).
@@ -211,7 +213,7 @@ Treat findings as leads to investigate, not items to fix blindly. Verify critica
 
 ## Deeper documentation
 
-The previous, more detailed README is preserved as [README-detailed.md](README-detailed.md). The full methodology lives in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md), including how bug-prospector pairs with [Workflow Audit](https://github.com/Terryc21/workflow-audit).
+The full methodology lives in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md), including how bug-prospector pairs with [Workflow Audit](https://github.com/Terryc21/workflow-audit). ([README-detailed.md](README-detailed.md) is retired — it duplicated this file and drifted; it now just points here.)
 
 ## Sibling skills
 
@@ -222,6 +224,7 @@ The previous, more detailed README is preserved as [README-detailed.md](README-d
 - [**prompter**](https://github.com/Terryc21/prompter) — prompt rewriting before execution
 - [**skill-reviewer**](https://github.com/Terryc21/skill-reviewer) — candid reviews of other Claude Code skills
 - [**tutorial-creator**](https://github.com/Terryc21/tutorial-creator) — annotated tutorials from your codebase
+- [**sitrep**](https://github.com/Terryc21/sitrep) — Xcode workflow skills (formerly `xcode-workflow-skills`)
 
 ## Author
 

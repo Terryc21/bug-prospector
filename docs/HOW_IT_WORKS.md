@@ -71,4 +71,4 @@ Run Workflow Audit to find what's broken now. Run Bug Prospector to find what wi
 
 - [Bug Prospector](https://github.com/Terryc21/bug-prospector) — Find bugs that pattern-based scanners miss
 - [Workflow Audit](https://github.com/Terryc21/workflow-audit) — Audit SwiftUI user workflows for dead ends and UX friction
-- [Xcode Workflow Skills](https://github.com/Terryc21/xcode-workflow-skills) — Full 22-skill suite (includes both)
+- [sitrep](https://github.com/Terryc21/sitrep) — Xcode workflow skills (formerly `xcode-workflow-skills`)

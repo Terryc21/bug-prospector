@@ -1,89 +1,26 @@
-# Bug Prospector
+# Bug Prospector — detailed README (retired)
 
-![Visitors](https://komarev.com/ghpvc/?username=Terryc21&repo=bug-prospector&label=visitors&color=blue) ![GitHub stars](https://img.shields.io/github/stars/Terryc21/bug-prospector?style=flat) ![GitHub forks](https://img.shields.io/github/forks/Terryc21/bug-prospector?style=flat)
+> **This file is retired. [README.md](README.md) is the maintained one.**
+>
+> It carried a second copy of the lens table, the usage block, the when-to-use
+> table, and the output description. Keeping two copies meant they drifted:
+> this file described the rating table as 5 columns long after it had grown to
+> 10, and pointed at a repo under its old name. Rather than fix a duplicate
+> that will drift again, the content now lives in one place.
 
-Mine for hidden bugs that pattern-based auditors miss.
+Everything that was here is in [README.md](README.md):
 
-## What It Does
-
-**Code auditors** check *how your code is written* — they find force unwraps, missing `@MainActor`, retain cycles, and deprecated APIs. If the syntax breaks a rule, they flag it.
-
-**Bug Prospector** checks *what your code assumes* — it finds logic that compiles and runs fine today but breaks when a real user does something unexpected. Things like:
-
-- What happens when that array is empty?
-- What if the user double-taps Save before the first save finishes?
-- What if the network call completes after the view disappears?
-- What if they open the app for the first time in 3 months?
-
-**Auditors find code that looks wrong. Bug Prospector finds code that looks right but behaves wrong.**
-
-## 7 Analysis Lenses
-
-| # | Lens | What It Finds |
-|---|------|---------------|
-| 1 | **Assumption Audit** | Implicit assumptions that break under real-world conditions |
-| 2 | **State Machine Analysis** | Unreachable states, simultaneous states, interrupted transitions |
-| 3 | **Boundary Conditions** | Zero/one/max values, empty collections, off-by-one errors |
-| 4 | **Data Lifecycle Tracing** | Data created but never cleaned up, stale displays, orphaned references |
-| 5 | **Error Path Exerciser** | Error paths that leave UI stuck, swallow errors, or lose user data |
-| 6 | **Time-Dependent Bugs** | Timezone issues, rapid-tap duplicates, slow network, first-launch-after-weeks |
-| 7 | **Platform Divergence** | Code that works on Apple Silicon but fails on Intel, OS version gaps |
-
-## Install
-
-See [**README.md § Install**](README.md#install) for the current two-step install. Run the two `/plugin` commands one at a time — Claude Code's dispatcher swallows the second if they are pasted together.
-
-> **Note:** this file is the older, more detailed README, kept for its longer explanations. `README.md` is the maintained one; where the two disagree, README.md wins.
-
-## Usage
-
-```
-/bug-prospector                    # Interactive — choose scope and lenses
-/bug-prospector quick              # Quick 3 lenses (Assumptions + Errors + Boundaries) on recent changes
-/bug-prospector all                # All 7 lenses on the full codebase
-/bug-prospector quick src/auth.ts  # Either preset, scoped to one path
-```
-
-## Output
-
-Reports are written to `.agents/research/YYYY-MM-DD-bug-prospector-*.md` with:
-- Issue Rating Table (Urgency, Risk, ROI, Blast Radius, Fix Effort)
-- Detailed findings with current code and suggested fixes
-- Fragile code warnings (works now, may break later)
-- Already-guarded instances (reference)
-
-**Terminal-adaptive tables:** Detects terminal width before rendering. Wide terminals (180+ columns) get the full table inline. Narrow terminals get a compact 4-column table with the full table written to the report file.
-
-A complete sample report — 4 BUG findings, 2 FRAGILE, 3 OK, 1 REVIEW across 4 lenses — is at [`skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md`](skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md). It demonstrates the full output format including detailed findings with current code + suggested fix for each, plus the FRAGILE classification (works now, breaks later) and the Already-Guarded reference list.
-
-## Fix Workflow
-
-After the report, you can fix bugs immediately. Fixes are grouped into phases:
-
-- **"Fix all bugs now"** — Phase-by-phase with a confirmation gate before each phase. Opt out of remaining gates at any time.
-- **"Fix selected bugs"** — Pick specific bugs, confirm once, then all selected are fixed.
-- **"Create implementation plan"** — Phased plan without code changes.
-- **"Report is sufficient"** — Just the report.
-
-## When to Use
-
-| Situation | Recommended Lenses |
-|-----------|--------------------|
-| Pre-release audit | All 7 |
-| After adding a new feature | Assumptions + State + Errors |
-| After a crash report | Boundaries + Errors + Platform |
-| Debugging intermittent failures | State + Time |
-| New platform support | Platform + Boundaries |
-| Data model changes | Data Lifecycle + Assumptions |
-
-## How It Works
-
-For how Bug Prospector differs from pattern-based tools (linters, compiler warnings, code review), and how it pairs with [Workflow Audit](https://github.com/Terryc21/workflow-audit), see [How It Works](docs/HOW_IT_WORKS.md).
-
-## See Also
-
-- [Workflow Audit](https://github.com/Terryc21/workflow-audit) — Audit SwiftUI user workflows for dead ends and UX friction
-- [Xcode Workflow Skills](https://github.com/Terryc21/xcode-workflow-skills) — Full 22-skill suite (includes both)
+| What you came for | Where it is now |
+|---|---|
+| What it does, and why | [README.md § What bug-prospector is for vs what linters are for](README.md#what-bug-prospector-is-for-vs-what-linters-are-for) |
+| The 7 lenses | [README.md § What it looks for](README.md#what-it-looks-for-the-7-lenses) |
+| Install | [README.md § Install](README.md#install) |
+| Usage and invocation forms | [README.md § Scoping a run](README.md#scoping-a-run) |
+| Output format and the rating table | [README.md § Output format](README.md#output-format) |
+| Terminal-adaptive tables | [README.md § Reading the reports](README.md#reading-the-reports) |
+| Fix workflow | [README.md § Fixing what it finds](README.md#fixing-what-it-finds) |
+| Which lenses for which situation | [README.md § What it looks for](README.md#what-it-looks-for-the-7-lenses) |
+| How it differs from pattern-based tools | [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) |
 
 ## License
 
