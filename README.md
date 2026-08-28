@@ -2,15 +2,15 @@
 
 ![Version](https://img.shields.io/github/v/tag/Terryc21/bug-prospector?label=version) ![Last commit](https://img.shields.io/github/last-commit/Terryc21/bug-prospector) ![Stars](https://img.shields.io/github/stars/Terryc21/bug-prospector?style=flat) ![Issues](https://img.shields.io/github/issues/Terryc21/bug-prospector) ![License](https://img.shields.io/github/license/Terryc21/bug-prospector) ![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-blueviolet)
 
-**A Claude Code skill that finds bugs in code that compiles fine, passes tests, and looks right but breaks the moment a real user does something unexpected.**
+**Your code compiles. Tests pass. It looks right. Then a real user does something you didn't think of, and it breaks.**
+
+bug-prospector is a Claude Code skill that goes looking for those bugs before the user does. It reads your code and asks what each piece assumes — then works out what happens when the assumption turns out to be wrong.
 
 > **Companion:** [bug-echo](https://github.com/Terryc21/bug-echo) — runs *after* a fix to find sibling instances of the same bug pattern. The two skills cover opposite halves of the bug-finding loop.
 
-bug-prospector and pattern-based linters are complementary, not competitive: linters check *how your code is written* against a rule catalog; bug-prospector checks *what your code assumes* against 7 forward-looking lenses. **A thorough audit uses both.**
-
 Built while shipping [Stuffolio](https://stuffolio.app), an iOS/macOS app, through real App Store submission cycles. bug-prospector itself is free, open source, Apache 2.0.
 
-*~6 min read · scan the TL;DR if you only have 30 seconds*
+*~5 min read · [how it works](docs/HOW_IT_WORKS.md) · [an example report](skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md) · [what changed](https://github.com/Terryc21/bug-prospector/releases)*
 
 ## TL;DR
 
@@ -19,39 +19,18 @@ Built while shipping [Stuffolio](https://stuffolio.app), an iOS/macOS app, throu
 - **Install:** Two `/plugin` commands in Claude Code; then `/bug-prospector` is available in any project.
 - **Try first:** `/bug-prospector quick` runs 3 of 7 lenses (Assumptions + Errors + Boundaries) on your recent changes. Light, fast, real report.
 - **Example output:** [a real backup-manager audit on Stuffolio](skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md) (4 BUG findings, 4 lenses). Also: [quick-scan on TypeScript](skills/bug-prospector/examples/quick-scan-auth-middleware.md).
-- **Maturity:** Used through real App Store submission cycles; works on any language, with extra Swift/SwiftUI lens depth.
+- **Maturity:** Used through real App Store submission cycles. Swift/SwiftUI is where it's deepest; other languages work, with a caveat in Honest limits below.
 
-## What is this, and why might I want it?
-
-If you're newer to Claude Code and unsure what an "audit skill" does, here's the short version.
-
-A **skill** is a markdown file Claude Code knows how to run. When you type `/bug-prospector`, Claude follows the instructions in that skill, looks at your code, and writes you a report. You don't have to memorize anything. The skill tells Claude what to do; you read the report.
-
-## What bug-prospector is for vs what linters are for
-
-bug-prospector and linters are complementary — they catch different bugs at different layers.
-
-**Pattern-based tools (SwiftLint, ESLint, custom rule sets, single-file linters)** check *how your code is written*. They flag force unwraps, missing `@MainActor`, retain cycles, deprecated APIs. If the syntax breaks a known rule, they catch it. They're fast, run continuously, and catch a real class of bugs cheaply. **They will find issues bug-prospector won't** — anything expressible as a single-file pattern.
-
-**bug-prospector** checks *what your code assumes*. Things like:
+## The kind of bug this finds
 
 - What happens when that array is empty?
 - What if the user double-taps Save before the first save finishes?
 - What if the network call completes after the view disappears?
 - What if they open the app for the first time in 3 months?
 
-These are bugs that compile fine, pass tests, and look right. The bug isn't in any single line. It's in a quiet assumption that turns out not to hold under real-world conditions. **bug-prospector will find issues linters won't** — assumption bugs have no code signature to search for.
+None of those is wrong on any single line, which is why linters don't catch them. Linters check *how your code is written* — force unwraps, deprecated APIs, retain cycles. bug-prospector checks *what your code assumes*.
 
-The short version: **linters find code that looks wrong. bug-prospector finds code that looks right but behaves wrong.**
-
-| What linters do better | What bug-prospector does better |
-|---|---|
-| Run on every save (cheap, continuous) | Run before release or after a crash (deeper, slower) |
-| Catch style and pattern violations | Catch behavioral and assumption bugs |
-| Mechanical, deterministic | Asks questions the rule catalog doesn't cover |
-| Mature ecosystem | 7-lens forward-looking analysis |
-
-A useful analogy: a linter is the building inspector confirming every wire is up to code. bug-prospector is the home inspector asking "what happens if the dishwasher and the microwave are running at the same time?" Different layer, different bugs. The inspection isn't complete without both.
+A linter is the building inspector confirming every wire is up to code. bug-prospector is the home inspector asking what happens when the dishwasher and the microwave run at the same time. Different layer, different bugs — run both. ([The longer comparison](docs/HOW_IT_WORKS.md), if you want it.)
 
 ## bug-prospector vs. bug-echo — which should you use?
 
@@ -146,32 +125,25 @@ You usually don't need all 7 every time. The right combination depends on what y
 
 ## Scoping a run
 
-bug-prospector scopes by **lens selection + scope picker**. The two dimensions are independent: you pick *what to look at* (recent changes / a specific file or feature / the whole codebase) and *which lenses to apply* (quick 3 / all 7 / custom subset).
+Two dimensions, picked independently: *what to look at* (recent changes, one file, the whole codebase) and *which lenses to apply* (quick 3, all 7, or a subset you choose). Add a path to either preset to scope it: `/bug-prospector quick src/auth.ts`.
 
-| Goal | Command |
-|---|---|
-| First run — lightest possible | `/bug-prospector quick` (3 lenses on recent changes) |
-| Full pre-release audit | `/bug-prospector all` (7 lenses on the whole project) |
-| Interactive scope + lens picker | `/bug-prospector` (asks both questions) |
-| Focus on one file or feature | `/bug-prospector <path>` — or `/bug-prospector` then pick "single file or directory" when prompted |
-| A preset, scoped to one path | `/bug-prospector quick <path>` (either preset accepts a path) |
-| Use a specific lens combo | `/bug-prospector` then pick "custom lenses" |
-
-**Fresh vs prior history.** Every bug-prospector run is fresh — the skill reads your current code and applies the 7 lenses from scratch. There's no resume mode and no diff-against-prior-report mode (workflow-audit's `--diff` is the closest analog in the family). Prior reports live in `.agents/research/` and can be compared by hand. If a finding shows up on three consecutive runs and you've decided it's a false positive for your codebase, document it in the lens-specific section of your project's CLAUDE.md so the skill knows to skip it next time; the skill respects context-rich guidance in CLAUDE.md when classifying findings.
+**Every run is fresh.** The skill reads your current code from scratch — there's no resume mode and no diff-against-last-report. Old reports stay in `.agents/research/` if you want to compare by hand. If a finding keeps coming back and you've decided it's a false positive for your codebase, say so in your project's CLAUDE.md; the skill reads that when classifying.
 
 ## Output format
 
-Reports go to `.agents/research/YYYY-MM-DD-bug-prospector-*.md` in your project. Standard format across the radar/audit ecosystem:
+Every run writes a rated table to `.agents/research/YYYY-MM-DD-bug-prospector-*.md`. Three real rows from the sample report:
 
-- File and line citations for every claim
-- Rating table: row number, finding, lens, urgency, risk-of-fix, risk-of-no-fix, ROI, blast radius, fix effort, confidence — 10 columns, plus two conditional ones below
-- **1-Star Risk** column, added only when the project ships to a public app store (inferred from the platform question; a backend or library run skips it)
-- **Status** column (Open / Fixed / Deferred / Skipped), added when findings are re-displayed during the fix workflow
-- Detailed findings with the current code and a suggested fix
-- A "FRAGILE" section for code that works now but is likely to break later
-- An "Already guarded" section for cases the lens checked and confirmed are fine
+| # | Finding | Lens | Urgency | ROI | Fix Effort | Confidence |
+|---|---------|------|---------|-----|------------|------------|
+| 1 | `BackupManager.swift:1414` — `try? rollback()` swallows rollback failure during restore | Error Path | 🔴 Critical | 🟠 Excellent | Trivial | verified |
+| 2 | `BackupManager.swift:1216` — 8 fetches via `try? context.fetch` silently return empty arrays | Error Path | 🟡 High | 🟠 Excellent | Small | verified |
+| F1 | `ItemListViewModel.swift:445` — filter rebuild races when filters change rapidly | Time | 🟢 Medium | 🟡 Marginal | Small | needs-runtime |
 
-A complete sample report (4 BUG findings, 2 FRAGILE, 3 OK, 1 REVIEW across 4 lenses): [example output](skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md).
+Every row carries a file and line, so you can go straight to the code. **Confidence** says how the rating was reached — `verified` means the code was read and confirmed, `needs-runtime` means you'd have to run the app to be sure. Two more columns appear when they apply: **1-Star Risk** on app-store projects, **Status** once you start fixing.
+
+Below the table, each finding gets the current code, a suggested fix, and the scenario that triggers it. Separate sections cover code that works now but will break later, and cases the lens checked and found already handled.
+
+The full sample — 4 BUG, 2 FRAGILE, 3 OK, 1 REVIEW across 4 lenses: [example output](skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md).
 
 A lighter second example showing the **Quick 3** preset on a single TypeScript file: [quick-scan example](skills/bug-prospector/examples/quick-scan-auth-middleware.md).
 
@@ -179,15 +151,9 @@ The report doesn't change your code. You decide which findings to fix.
 
 ### Reading the reports
 
-**The skill adapts to your terminal automatically.** It checks the width before rendering: 180+ columns gets the full table inline, anything narrower (or a width it can't determine) gets a compact 4-column table inline instead. **The full table is written to the report file on every path** — a compact inline view means fewer columns on screen, never fewer findings or dropped ratings.
+**The skill adapts to your terminal.** 180+ columns gets the full table inline; anything narrower gets a compact 4-column version. **The full table goes to the report file either way** — a compact inline view means fewer columns on screen, never fewer findings.
 
-The rating table needs ~180 chars to render horizontally. In a narrower window the cells stack vertically and the report becomes harder to scan. For best readability:
-
-- **GitHub or GitLab**: open the report file in the web UI; tables render natively.
-- **Markdown viewer apps**: [Bear](https://bear.app/) (Mac/iOS, free tier; import .md as a note), [MacDown](https://macdown.uranusjr.com/) (Mac, free), [Marked 2](https://marked2app.com/) (Mac, paid) or [iA Writer](https://ia.net/writer) (Mac/iOS/Windows/Android, paid), [Obsidian](https://obsidian.md/) or [Typora](https://typora.io/) (cross-platform).
-- **VS Code**: built-in Markdown Preview (cmd-shift-V on Mac).
-
-If tables look broken in your terminal, widen the window or use one of the apps above.
+The table wants ~180 chars to render horizontally, so if it looks broken in your terminal, open the report file on GitHub, in VS Code's preview (cmd-shift-V), or any markdown viewer.
 
 ## Fixing what it finds
 
@@ -206,6 +172,7 @@ This skill is a tool, not an oracle. A few things to keep in mind:
 - False positives happen. A lens may flag a state-machine concern in code that's intentionally simple.
 - False negatives happen. Bugs whose pattern doesn't fit any of the 7 lenses won't get caught.
 - It can't run your code. It reads your code and reasons about it. Some bugs only show up at runtime; static reasoning has limits.
+- **The lenses are language-neutral; the plumbing is Swift-tagged.** The search shortcuts and the scope picker both filter on `*.swift`. On another language, hand it a path — `/bug-prospector quick src/auth.ts` — and the lenses work normally. Let it pick the scope itself and it will find nothing and say so, rather than reporting a clean run. Widening this is on the list.
 
 Treat findings as leads to investigate, not items to fix blindly. Verify critical findings before committing.
 

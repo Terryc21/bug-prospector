@@ -12,7 +12,7 @@ Everything that was here is in [README.md](README.md):
 
 | What you came for | Where it is now |
 |---|---|
-| What it does, and why | [README.md § What bug-prospector is for vs what linters are for](README.md#what-bug-prospector-is-for-vs-what-linters-are-for) |
+| What it does, and why | [README.md § The kind of bug this finds](README.md#the-kind-of-bug-this-finds) |
 | The 7 lenses | [README.md § What it looks for](README.md#what-it-looks-for-the-7-lenses) |
 | Install | [README.md § Install](README.md#install) |
 | Usage and invocation forms | [README.md § Scoping a run](README.md#scoping-a-run) |
