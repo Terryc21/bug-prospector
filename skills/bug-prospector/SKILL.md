@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.2.0
+version: 1.2.1
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -108,9 +108,41 @@ Record the result as **store-distributed: yes/no**. A server, library, or intern
 
 ---
 
+## Step 0.5: Read the invocation arguments
+
+`/bug-prospector` accepts two optional arguments in either order: a **preset** and a **scope**. Parse them BEFORE Step 1 — each one that is present replaces the corresponding question, and asking anyway ignores what the user already told you.
+
+| Invocation | Lenses | Scope | Prompts skipped |
+|---|---|---|---|
+| `/bug-prospector` | ask (1.2) | ask (1.1) | none |
+| `/bug-prospector quick` | Quick 3 — Assumption, Error Path, Boundary | recently changed files | both |
+| `/bug-prospector all` | all 7 | full codebase | both |
+| `/bug-prospector <path>` | ask (1.2) | that file or directory | 1.1 only |
+| `/bug-prospector quick <path>` | Quick 3 | that path | both |
+| `/bug-prospector all <path>` | all 7 | that path | both |
+
+**Parsing rules:**
+
+- The preset is the literal token `quick` or `all`. Anything else is a scope.
+- A scope argument is a file path, directory path, or glob. Resolve it relative to the project root. If it matches nothing, say so and fall back to the Step 1.1 question rather than scanning the whole codebase — a typo'd path must never silently widen the run.
+- `quick` and `all` are mutually exclusive. If both appear, ask which was meant; do not guess.
+- Arguments not recognized as either a preset or a resolvable path: report what was not understood, then fall through to the full interactive flow.
+
+**A preset sets the default scope, not a locked one.** `quick` and `all` carry the scopes in the table above because that is what the documentation promises. An explicit path always wins over a preset's default.
+
+**Announce the resolved run before executing** — one line, so a mis-parse is visible before the expensive part starts:
+
+> Running **Quick 3** (Assumption · Error Path · Boundary) on **files changed in the last 5 commits**.
+
+Step 0 (platform context) still runs regardless of arguments: no invocation form supplies the platform, and every lens depends on it.
+
+---
+
 ## Step 1: Choose Scope and Lenses
 
 ### 1.1: Determine Scope
+
+**Skip this question entirely if Step 0.5 resolved a scope** (a preset's default or an explicit path). Go straight to the resolution notes below using the scope already determined.
 
 ```
 AskUserQuestion with questions:
@@ -142,6 +174,8 @@ git diff --name-only HEAD~5 -- "*.swift" | head -30
 4. Skip: pure layout views, previews, test files
 
 ### 1.2: Choose Lenses
+
+**Skip this question entirely if Step 0.5 resolved a preset** (`quick` → Assumption + Error Path + Boundary; `all` → all 7).
 
 ```
 AskUserQuestion with questions:

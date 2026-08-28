@@ -46,8 +46,9 @@ claude plugin install ./bug-prospector
 
 ```
 /bug-prospector                    # Interactive — choose scope and lenses
-/bug-prospector all                # Full 7-lens scan on recent changes
-/bug-prospector quick              # Quick 3 lenses (Assumptions + Errors + Boundaries)
+/bug-prospector quick              # Quick 3 lenses (Assumptions + Errors + Boundaries) on recent changes
+/bug-prospector all                # All 7 lenses on the full codebase
+/bug-prospector quick src/auth.ts  # Either preset, scoped to one path
 ```
 
 ## Output

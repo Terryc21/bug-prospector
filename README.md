@@ -153,7 +153,8 @@ bug-prospector scopes by **lens selection + scope picker**. The two dimensions a
 | First run — lightest possible | `/bug-prospector quick` (3 lenses on recent changes) |
 | Full pre-release audit | `/bug-prospector all` (7 lenses on the whole project) |
 | Interactive scope + lens picker | `/bug-prospector` (asks both questions) |
-| Focus on one file or feature | `/bug-prospector` then pick "single file or directory" when prompted |
+| Focus on one file or feature | `/bug-prospector <path>` — or `/bug-prospector` then pick "single file or directory" when prompted |
+| A preset, scoped to one path | `/bug-prospector quick <path>` (either preset accepts a path) |
 | Use a specific lens combo | `/bug-prospector` then pick "custom lenses" |
 
 **Fresh vs prior history.** Every bug-prospector run is fresh — the skill reads your current code and applies the 7 lenses from scratch. There's no resume mode and no diff-against-prior-report mode (workflow-audit's `--diff` is the closest analog in the family). Prior reports live in `.agents/research/` and can be compared by hand. If a finding shows up on three consecutive runs and you've decided it's a false positive for your codebase, document it in the lens-specific section of your project's CLAUDE.md so the skill knows to skip it next time; the skill respects context-rich guidance in CLAUDE.md when classifying findings.
