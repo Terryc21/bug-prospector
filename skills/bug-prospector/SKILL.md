@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.2.2
+version: 1.2.3
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -547,6 +547,26 @@ Use the Issue Rating scale:
 
 > **On the 1-Star Risk band:** this is bug-prospector's own judgment from the finding's user-facing consequence, not output from a dedicated review-risk tool. Treat it as a prioritization hint among findings, not a measured prediction of store ratings.
 
+## Implementation Plan
+
+Phased fix order for the BUG and FRAGILE findings above. Emit this section whenever there is at least one BUG finding; omit it on a clean run.
+
+Group by **file proximity and dependency**, then order phases by the highest Urgency each contains:
+
+- Findings in the same file belong in the same phase — one read, one edit pass, one build.
+- A finding whose fix changes a signature or shared type comes BEFORE any finding that depends on it, even if the dependent one is more urgent. Dependency order beats urgency order; note it when the two conflict.
+- Keep a phase to one build-verify cycle's worth of work. A phase spanning 8 files is two phases.
+
+```
+### Phase 1: [Name] — [N fixes]
+**Files:** path/to/File.swift, path/to/Other.swift
+**Findings:** 1, 3, F1
+**Rationale:** [why these group — same file, shared type, or blocking a later phase]
+**Verify:** [what to build or run before moving on]
+```
+
+Phase numbering here is what Step 5's fix workflow walks through — the phase gate names the phase and counts its fixes from this section, so the two always agree.
+
 ## Detailed Findings
 
 ### 1. [File:Line] — [Brief Description]
@@ -616,11 +636,11 @@ AskUserQuestion with questions:
 ]
 ```
 
-If creating plan: Group findings by file proximity and dependency, order by urgency, output as a numbered plan.
+If creating plan: the report's **Implementation Plan** section (Step 4) already contains it — present that, expanded with per-finding fix notes. Do not derive a second, differently-grouped plan; two plans for one report is how the phase numbering drifts.
 
 ### Fix Workflow: "Fix all bugs now"
 
-Group bugs into phases by file proximity and dependency (as in the report's Implementation Plan). Before each phase, prompt with a **phase gate** — one question, always includes opt-out:
+Walk the phases from the report's **Implementation Plan** section in order — that section is the source of truth for grouping and numbering, so Phase 2 here is Phase 2 there. Before each phase, prompt with a **phase gate** — one question, always includes opt-out:
 
 ```
 AskUserQuestion with questions:

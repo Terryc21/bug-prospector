@@ -31,16 +31,9 @@ Mine for hidden bugs that pattern-based auditors miss.
 
 ## Install
 
-```bash
-claude plugin add Terryc21/bug-prospector
-```
+See [**README.md § Install**](README.md#install) for the current two-step install. Run the two `/plugin` commands one at a time — Claude Code's dispatcher swallows the second if they are pasted together.
 
-Or clone and install locally:
-
-```bash
-git clone https://github.com/Terryc21/bug-prospector.git
-claude plugin install ./bug-prospector
-```
+> **Note:** this file is the older, more detailed README, kept for its longer explanations. `README.md` is the maintained one; where the two disagree, README.md wins.
 
 ## Usage
 
