@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.2.3
+version: 1.2.4
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -24,9 +24,28 @@ metadata:
 
 ## Pre-flight: Git Safety Check
 
+This check decides whether the user has a revert point before the skill edits anything. **An empty result is only trustworthy if the command actually ran**, so establish that first — run all three and read them together:
+
 ```bash
-git status --short
+git rev-parse --show-toplevel     # positive control: proves git works AND names the real root
+git status --porcelain | wc -l    # 0 = clean, N = N changed files
+git status --short                # the listing itself
 ```
+
+🛑 **Empty output alone is NOT proof of a clean tree.** `git status --short` prints nothing and exits **0** in cases that are not "clean":
+
+- **The repo root is a parent directory.** Run from a subdirectory that has no `.git` of its own, git resolves upward — `--show-toplevel` returning a path ABOVE the directory you targeted means your scope and the repo root differ. Scope paths accordingly.
+- **A sandbox or permission layer blocked the read** (macOS TCC on an external volume is the common case). The command appears to succeed and reports nothing.
+
+**Read the three results as a set:**
+
+| `--show-toplevel` | `wc -l` | Meaning |
+|---|---|---|
+| a path | `0` | Genuinely clean — proceed |
+| a path | `N > 0` | N uncommitted files — ask below |
+| fails / non-zero exit | anything | **Git is not usable here. Stop and say so** — do not report "clean" |
+
+**If the positive control fails, do NOT proceed as though the tree were clean.** Report that the git state could not be established, name what failed, and let the user decide. A skill that edits files after a failed safety check has removed the user's revert point without telling them.
 
 If uncommitted changes exist:
 
