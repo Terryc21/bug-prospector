@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.3.0
+version: 1.3.1
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -168,11 +168,23 @@ Every scope path and every search accelerator below filters on a file glob. **Re
 **Resolution order, first match wins:**
 
 1. **An explicit path from Step 0.5 names a file.** Take its extension. `/bug-prospector quick src/auth.ts` → `**/*.{ts,tsx}`.
-2. **Count what the repo actually contains:**
+2. **Census the repo by source BYTE VOLUME, excluding tests and vendored code:**
 
 ```bash
-git ls-files | sed -n 's/.*\.\([a-zA-Z0-9]*\)$/\1/p' | sort | uniq -c | sort -rn | head -10
+SRC='swift|ts|tsx|js|jsx|mjs|py|go|rs|kt|java|rb|c|cc|cpp|h|hpp|cs|php|scala|dart'
+git ls-files \
+  | grep -viE '(^|/)(tests?|specs?|fixtures?|mocks?|vendor|node_modules|Pods|\.build|dist|third_party)(/|$)|\.(test|spec)\.' \
+  | grep -iE "\.($SRC)\$" \
+  | while read f; do echo "${f##*.} $(wc -c < "$f")"; done \
+  | awk '{a[$1]+=$2} END {for(e in a) print a[e], e}' | sort -rn | head -5
 ```
+
+🛑 **Do not count files — count bytes, and only in source extensions.** Both halves are load-bearing, and each was wrong on a real repo before this command took its current form:
+
+- **File count picks build tooling over the application.** A Swift app with a JS build layer measured **32 swift vs 30 js** by count — a two-file margin decided entirely by its test directory. Excluding tests made it *worse* (30 js vs 12 swift), because build scripts are numerous and small. By byte volume the same repo reads **3,472 swift vs 60 js**.
+- **Byte volume without the extension filter picks images.** On a 910-file Swift project, raw byte volume ranks **PNG (20 MB) above Swift (13 MB)**. Restricting to source extensions first gives swift 9.6 MB vs js 742 KB.
+
+Application source is fewer, larger files; tooling is many small ones; assets are enormous and irrelevant. The two filters together are what make the census track the code under audit.
 
 3. **Map the dominant source extension** to a glob, pairing extensions that travel together:
 
@@ -218,7 +230,7 @@ So when `$SOURCE_GLOB` is not `**/*.swift`:
 - **Read the files.** Step 2 already requires reading each file completely before analysis; on a non-Swift project that reading IS the analysis, not a supplement to grep.
 - **Treat every accelerator miss as uninformative**, never as a finding of "none."
 - **Translate the concept, not the token.** The Error Path lens asks what happens when an error path is taken — in TypeScript that is `catch`, `.catch()`, and an unawaited promise, not `try?`. Apply the lens's *goal* (stated at the top of each lens) rather than its pattern list.
-- **Say so in the report header:** `Accelerators: Swift-tagged, advisory on this project (source glob `**/*.{ts,tsx}`).`
+- **Say so in the report header** — the Step 4.2 template has a `**Accelerators:**` field for exactly this; set it to `advisory` with the language named.
 
 This is a real limit, not a formality. bug-prospector is deepest on Swift; on other languages the lenses carry the analysis unaided.
 
@@ -270,11 +282,7 @@ Step 0.6 makes this rarer than it was, but not impossible: a `$SOURCE_PATHSPEC` 
 
 1. **Do not proceed to Step 2.** No lenses, no report, no `.agents/` file.
 2. **Say what resolved to nothing**, naming the actual filter used — "`git diff HEAD~5 -- "*.ts" "*.tsx"` matched 0 files" is actionable; "no findings" is not.
-3. **Re-check the extension census** from Step 0.6 — if the dominant extension does not match the glob you resolved, the resolution was wrong, not the codebase:
-
-```bash
-git ls-files | sed -n 's/.*\.\([a-zA-Z0-9]*\)$/\1/p' | sort | uniq -c | sort -rn | head -10
-```
+3. **Re-run the Step 0.6 census** — the same byte-volume command, not a simpler one. If the dominant extension does not match the glob you resolved, the resolution was wrong, not the codebase.
 
 4. **Report what you found and let the user choose:**
 
@@ -414,11 +422,13 @@ Grep pattern="showingError|showingAlert|showingSheet" glob="$SOURCE_GLOB"
 **Search accelerators:**
 ```
 Grep pattern="\.remove(First|Last)\(\)" glob="$SOURCE_GLOB"
-Grep pattern="\.\[.*\]" glob="$SOURCE_GLOB"
+Grep pattern="\w\[[^]]+\]" glob="$SOURCE_GLOB"
 Grep pattern="\.prefix\(|\.suffix\(" glob="$SOURCE_GLOB"
 Grep pattern="\.split\(|\.components\(" glob="$SOURCE_GLOB"
 Grep pattern="Int\.max|\.count\s*-\s*1" glob="$SOURCE_GLOB"
 ```
+
+⚠️ **The subscript accelerator returns a LOT** — it matched 120 of 619 files on the project it was calibrated against, and it also catches array type annotations (`[String]`). That is expected: subscript access is common, and this accelerator narrows by reading, not by matching. Use it to enumerate candidates, then apply the Step 3 verification rule to each. A short hit list from this pattern means the glob is wrong, not that the code is safe.
 
 ### Lens 4: Data Lifecycle Tracing
 
@@ -609,6 +619,8 @@ The **report file** always uses the full table regardless of terminal width.
 **Scope:** [Files/features analyzed]
 **Lenses Applied:** [List of lenses used]
 **Files Analyzed:** N
+**Source glob:** `[$SOURCE_GLOB as resolved in Step 0.6]`
+**Accelerators:** [`full` on Swift · `advisory — Swift-tagged patterns on a <lang> project, lenses ran unaided` otherwise]
 
 ## Summary
 
