@@ -21,16 +21,20 @@
 
 All BUG and FRAGILE findings rated and sorted by Urgency then ROI:
 
-| # | Finding | Lens | Urgency | Risk: Fix | Risk: No Fix | ROI | Blast Radius | Fix Effort |
-|---|---------|------|---------|-----------|-------------|-----|-------------|------------|
-| 1 | BackupManager.swift:1414 — `try? rollback()` swallows rollback failure during restore | Error Path | 🔴 Critical | ⚪ Low | 🔴 Critical | 🟠 Excellent | ⚪ 1 file | Trivial |
-| 2 | BackupManager.swift:1216-1223 — 8 entity fetches via `try? context.fetch` silently return empty arrays | Error Path | 🟡 High | ⚪ Low | 🟡 High | 🟠 Excellent | ⚪ 1 file | Small |
-| 3 | ItemListViewModel.swift:558-580 — count helpers read `cachedFilteredItems` without verifying input matches cached input | Assumption | 🟡 High | ⚪ Low | 🟡 High | 🟠 Excellent | ⚪ 1 file | Trivial |
-| 4 | BackupManager.swift:1093 — assumes `archive.url` exists before reading; no guard for partial archive | Boundary | 🟢 Medium | ⚪ Low | 🟢 Medium | 🟢 Good | ⚪ 1 file | Small |
-| F1 | BackupManager.swift:1840 — assumes JSON decode succeeds; new field additions to backup schema would silently lose data | Data Lifecycle | 🟢 Medium | 🟢 Med | 🟡 High | 🟢 Good | 🟢 3 files | Medium |
-| F2 | ItemListViewModel.swift:445 — filter rebuild relies on @Observable willSet; rapid filter changes can race | Time | 🟢 Medium | 🟢 Med | 🟢 Medium | 🟡 Marginal | ⚪ 1 file | Small |
+| # | Finding | Lens | Urgency | Risk: Fix | Risk: No Fix | ROI | Blast Radius | Fix Effort | Confidence | 1-Star Risk |
+|---|---------|------|---------|-----------|-------------|-----|-------------|------------|------------|-------------|
+| 1 | BackupManager.swift:1414 — `try? rollback()` swallows rollback failure during restore | Error Path | 🔴 Critical | ⚪ Low | 🔴 Critical | 🟠 Excellent | ⚪ 1 file | Trivial | verified | 🔴 High |
+| 2 | BackupManager.swift:1216-1223 — 8 entity fetches via `try? context.fetch` silently return empty arrays | Error Path | 🟡 High | ⚪ Low | 🟡 High | 🟠 Excellent | ⚪ 1 file | Small | verified | 🔴 High |
+| 3 | ItemListViewModel.swift:558-580 — count helpers read `cachedFilteredItems` without verifying input matches cached input | Assumption | 🟡 High | ⚪ Low | 🟡 High | 🟠 Excellent | ⚪ 1 file | Trivial | verified | 🟡 Medium |
+| 4 | BackupManager.swift:1093 — assumes `archive.url` exists before reading; no guard for partial archive | Boundary | 🟢 Medium | ⚪ Low | 🟢 Medium | 🟢 Good | ⚪ 1 file | Small | probable | 🟡 Medium |
+| F1 | BackupManager.swift:1840 — assumes JSON decode succeeds; new field additions to backup schema would silently lose data | Data Lifecycle | 🟢 Medium | 🟢 Med | 🟡 High | 🟢 Good | 🟢 3 files | Medium | probable | 🔴 High |
+| F2 | ItemListViewModel.swift:445 — filter rebuild relies on @Observable willSet; rapid filter changes can race | Time | 🟢 Medium | 🟢 Med | 🟢 Medium | 🟡 Marginal | ⚪ 1 file | Small | needs-runtime | 🟢 Low |
 
 **Urgency scale:** 🔴 CRITICAL (crash/data loss) · 🟡 HIGH (incorrect behavior) · 🟢 MEDIUM (degraded UX) · ⚪ LOW (cosmetic/minor)
+
+**Confidence:** `verified` (code read and confirmed) · `probable` (structural analysis) · `needs-runtime` (must run the app to confirm)
+
+**1-Star Risk** *(present because Step 0 recorded iOS + macOS — a store-distributed project)*: how likely the finding would provoke a one-star review if left unfixed. Note rows 1 and F1 — both rate 🔴 High while sitting at 🔴 Critical and 🟢 Medium Urgency respectively. Urgency measures the engineering severity; 1-Star Risk measures what the user would write in a review. Losing backup data scores high on the second scale regardless of where it sits on the first.
 
 ## Detailed Findings
 

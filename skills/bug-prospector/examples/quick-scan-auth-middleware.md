@@ -38,14 +38,18 @@ Invocation:
 
 All BUG and FRAGILE findings rated and sorted by Urgency then ROI:
 
-| # | Finding | Lens | Urgency | Risk: Fix | Risk: No Fix | ROI | Blast Radius | Fix Effort |
-|---|---------|------|---------|-----------|-------------|-----|-------------|------------|
-| 1 | `auth.ts:34` — `jwt.verify(token, secret)` does not pass an `algorithms` option; accepts any signature algorithm including `none`, allowing forged tokens | Assumption | 🔴 Critical | ⚪ Low | 🔴 Critical | 🟠 Excellent | ⚪ 1 file | Trivial |
-| 2 | `auth.ts:48` — `req.headers.authorization` accessed without checking type; if a client sends multiple `Authorization` headers, Node returns an array and `.split(' ')` throws | Boundary | 🟡 High | ⚪ Low | 🟡 High | 🟠 Excellent | ⚪ 1 file | Trivial |
-| 3 | `auth.ts:61` — `catch (err) { res.status(401).send() }` swallows the underlying error type; expired tokens, invalid signatures, and malformed JWTs all return identical 401 with no log entry | Error Path | 🟡 High | ⚪ Low | 🟢 Medium | 🟠 Excellent | ⚪ 1 file | Small |
-| F1 | `auth.ts:22` — `process.env.JWT_SECRET` read at module load; if env var is missing, the middleware silently uses `undefined` as the secret, which `jsonwebtoken` accepts and produces unverifiable tokens | Assumption | 🟢 Medium | ⚪ Low | 🟡 High | 🟢 Good | ⚪ 1 file | Trivial |
+| # | Finding | Lens | Urgency | Risk: Fix | Risk: No Fix | ROI | Blast Radius | Fix Effort | Confidence |
+|---|---------|------|---------|-----------|-------------|-----|-------------|------------|------------|
+| 1 | `auth.ts:34` — `jwt.verify(token, secret)` does not pass an `algorithms` option; accepts any signature algorithm including `none`, allowing forged tokens | Assumption | 🔴 Critical | ⚪ Low | 🔴 Critical | 🟠 Excellent | ⚪ 1 file | Trivial | verified |
+| 2 | `auth.ts:48` — `req.headers.authorization` accessed without checking type; if a client sends multiple `Authorization` headers, Node returns an array and `.split(' ')` throws | Boundary | 🟡 High | ⚪ Low | 🟡 High | 🟠 Excellent | ⚪ 1 file | Trivial | verified |
+| 3 | `auth.ts:61` — `catch (err) { res.status(401).send() }` swallows the underlying error type; expired tokens, invalid signatures, and malformed JWTs all return identical 401 with no log entry | Error Path | 🟡 High | ⚪ Low | 🟢 Medium | 🟠 Excellent | ⚪ 1 file | Small | verified |
+| F1 | `auth.ts:22` — `process.env.JWT_SECRET` read at module load; if env var is missing, the middleware silently uses `undefined` as the secret, which `jsonwebtoken` accepts and produces unverifiable tokens | Assumption | 🟢 Medium | ⚪ Low | 🟡 High | 🟢 Good | ⚪ 1 file | Trivial | probable |
 
 **Urgency scale:** 🔴 CRITICAL (auth bypass / data loss) · 🟡 HIGH (incorrect behavior) · 🟢 MEDIUM (degraded UX or hidden risk) · ⚪ LOW (cosmetic)
+
+**Confidence:** `verified` (code read and confirmed) · `probable` (structural analysis) · `needs-runtime` (must run the service to confirm)
+
+**No 1-Star Risk column here.** Step 0's platform answer was "Other / multi-platform," and the follow-up distribution question answered *no public app store* — this is a Node.js backend with no review page. The column is dropped rather than filled with ⚪. The Swift example in this directory shows the store-distributed form.
 
 ---
 

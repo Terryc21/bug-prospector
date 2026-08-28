@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.1.0
+version: 1.2.0
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -75,6 +75,36 @@ AskUserQuestion with questions:
 ```
 
 Record the answer. Every subsequent lens MUST honor it during classification (see Step 3, rule 7).
+
+### Distribution channel (drives the 1-Star Risk column)
+
+The platform answer also determines whether the report carries a **1-Star Risk** column (Step 4.2). Do NOT ask a second question when the platform answer already settles it:
+
+| Step 0 answer | App Store distribution | Ask again? |
+|---|---|---|
+| iOS only | Yes — App Store | No |
+| macOS only | Yes — Mac App Store | No |
+| Universal (iOS + macOS) | Yes — both | No |
+| Other / multi-platform | Unknown | **Yes** — ask below |
+
+**Only if the user chose "Other / multi-platform":**
+
+```
+AskUserQuestion with questions:
+[
+  {
+    "question": "Does this project ship to a public app store where users leave ratings?",
+    "header": "Store",
+    "options": [
+      {"label": "Yes — public app store", "description": "App Store, Mac App Store, Play Store, or similar. Findings get a 1-Star Risk rating."},
+      {"label": "No — no public ratings", "description": "Backend service, internal tool, library, or CLI. Skip the 1-Star Risk column."}
+    ],
+    "multiSelect": false
+  }
+]
+```
+
+Record the result as **store-distributed: yes/no**. A server, library, or internal tool has no review page, so a review-risk column there is noise — that is the whole reason this is conditional.
 
 ---
 
@@ -410,16 +440,20 @@ Before rendering the report, check terminal width:
 tput cols
 ```
 
-- **160+ columns:** Use the **full 8-column table** inline and in the report file.
-- **Under 160 columns:** Use the **compact 4-column table** inline, write the **full 8-column table** to the report file only. Display this notice after the inline table:
+The full table is 9 columns, plus 1-Star Risk when store-distributed and Status on re-display — so 9 to 11 depending on the run. Budget ~180 columns for the widest form.
 
-> **Compact view** — your terminal is [N] columns wide (160+ needed for full table). The complete Issue Rating Table with all 8 columns has been written to `.agents/research/YYYY-MM-DD-bug-prospector-<scope>.md`. Open that file or widen your terminal to 160+ columns to view it as a single table.
+- **180+ columns:** Use the **full table** inline and in the report file.
+- **Under 180 columns:** Use the **compact 4-column table** inline, write the **full table** to the report file only. Display this notice after the inline table:
+
+> **Compact view** — your terminal is [N] columns wide (180+ needed for the full table). The complete Issue Rating Table with all [K] columns has been written to `.agents/research/YYYY-MM-DD-bug-prospector-<scope>.md`. Open that file or widen your terminal to 180+ columns to view it as a single table.
+
+If `tput cols` fails or returns exactly 80 (the default when output is not a TTY, which is the common case when this skill runs), do not silently take the compact path — ask the user which width to render.
 
 ### 4.2: Render Report
 
 **Display the summary and findings inline**, then write to `.agents/research/YYYY-MM-DD-bug-prospector-<scope>.md`.
 
-The **report file** always uses the full 8-column table regardless of terminal width.
+The **report file** always uses the full table regardless of terminal width.
 
 ```markdown
 # Bug Prospector Report: [Scope Description]
@@ -443,15 +477,19 @@ The **report file** always uses the full 8-column table regardless of terminal w
 All BUG and FRAGILE findings rated and sorted by Urgency then ROI:
 ```
 
-**Full table (160+ columns) — used inline AND in report file:**
+**Full table (180+ columns) — used inline AND in report file.** The 10th column is **1-Star Risk**, included ONLY when Step 0 recorded *store-distributed: yes*:
 
-| # | Finding | Lens | Urgency | Risk: Fix | Risk: No Fix | ROI | Blast Radius | Fix Effort |
-|---|---------|------|---------|-----------|-------------|-----|-------------|------------|
-| 1 | File.swift:45 — array accessed without bounds check | Boundary | 🔴 Critical | ⚪ Low | 🔴 Critical | 🟠 Excellent | ⚪ 1 file | Trivial |
-| 2 | Manager.swift:89 — isLoading never reset on error | Error Path | 🟡 High | ⚪ Low | 🟡 High | 🟠 Excellent | ⚪ 1 file | Trivial |
-| 3 | ViewModel.swift:200 — DateFormatter without timezone | Time | 🟢 Medium | ⚪ Low | 🟢 Medium | 🟢 Good | 🟢 3 files | Small |
+| # | Finding | Lens | Urgency | Risk: Fix | Risk: No Fix | ROI | Blast Radius | Fix Effort | Confidence | 1-Star Risk |
+|---|---------|------|---------|-----------|-------------|-----|-------------|------------|------------|-------------|
+| 1 | File.swift:45 — array accessed without bounds check | Boundary | 🔴 Critical | ⚪ Low | 🔴 Critical | 🟠 Excellent | ⚪ 1 file | Trivial | verified | 🔴 High |
+| 2 | Manager.swift:89 — isLoading never reset on error | Error Path | 🟡 High | ⚪ Low | 🟡 High | 🟠 Excellent | ⚪ 1 file | Trivial | verified | 🟡 Medium |
+| 3 | ViewModel.swift:200 — DateFormatter without timezone | Time | 🟢 Medium | ⚪ Low | 🟢 Medium | 🟢 Good | 🟢 3 files | Small | probable | 🟢 Low |
 
-**Compact table (under 160 columns) — used inline only:**
+**When *store-distributed: no*, drop the 1-Star Risk column entirely** — do not emit it empty or filled with ⚪. A backend service or library has no review page; the column would be dead weight in every row.
+
+**Status column (conditional, appended last).** Add a **Status** column (`Open` / `Fixed` / `Deferred` / `Skipped`) whenever the table is re-displayed after the initial report — during the fix workflow's phase gates, or in any follow-up run that revisits earlier findings. Omit it on first display, where every finding is `Open` by definition. With both conditional columns present the table runs to 11.
+
+**Compact table (under 180 columns) — used inline only:**
 
 | # | Finding | Urgency | Fix Effort |
 |---|---------|---------|------------|
@@ -469,7 +507,11 @@ Use the Issue Rating scale:
 - **ROI:** 🟠 Excellent · 🟢 Good · 🟡 Marginal · 🔴 Poor
 - **Blast Radius:** Number of files the fix touches (e.g., "⚪ 1 file", "🟢 3 files", "🟡 12 files"). Count by grepping for callers/references before rating.
 - **Fix Effort:** Trivial / Small / Medium / Large
+- **Confidence:** How the rating was reached. `verified` (code read and confirmed by grep or test) · `probable` (structural analysis, not independently verified) · `needs-runtime` (requires running the app to confirm). Always populated. A finding classified REVIEW is never `verified`.
+- **1-Star Risk** *(only when store-distributed)*: How likely this finding, left unfixed, would provoke a one-star review — 🔴 High · 🟡 Medium · 🟢 Low · ⚪ Not scored. Rate from user-visible consequence, not code severity: data loss, lost work, and "the app lied to me" score high; a slow path or a cosmetic gap scores low. A finding can be 🔴 Critical on Urgency and 🟢 Low here (an internal crash on a path few users reach), or the reverse. Use ⚪ when you have not scored it rather than guessing a band.
 ```
+
+> **On the 1-Star Risk band:** this is bug-prospector's own judgment from the finding's user-facing consequence, not output from a dedicated review-risk tool. Treat it as a prioritization hint among findings, not a measured prediction of store ratings.
 
 ## Detailed Findings
 

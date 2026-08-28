@@ -163,8 +163,9 @@ bug-prospector scopes by **lens selection + scope picker**. The two dimensions a
 Reports go to `.agents/research/YYYY-MM-DD-bug-prospector-*.md` in your project. Standard format across the radar/audit ecosystem:
 
 - File and line citations for every claim
-- 9-column rating table: severity, urgency, risk-of-fix, risk-of-no-fix, ROI, blast radius, fix effort, status, axis classification
-- 3-axis classification: Axis 1 (release-blocking), Axis 2 (quality), Axis 3 (hygiene)
+- Rating table: finding, lens, urgency, risk-of-fix, risk-of-no-fix, ROI, blast radius, fix effort, confidence — 9 columns, plus two conditional ones below
+- **1-Star Risk** column, added only when the project ships to a public app store (inferred from the platform question; a backend or library run skips it)
+- **Status** column (Open / Fixed / Deferred / Skipped), added when findings are re-displayed during the fix workflow
 - Detailed findings with the current code and a suggested fix
 - A "FRAGILE" section for code that works now but is likely to break later
 - An "Already guarded" section for cases the lens checked and confirmed are fine
@@ -177,7 +178,7 @@ The report doesn't change your code. You decide which findings to fix.
 
 ### Reading the reports
 
-The 9-column rating table needs a wide terminal (~180 chars) to render as a horizontal table. In a narrower window the cells stack vertically and the report becomes harder to scan. For best readability:
+The rating table needs a wide terminal (~180 chars) to render as a horizontal table. In a narrower window the cells stack vertically and the report becomes harder to scan. For best readability:
 
 - **GitHub or GitLab**: open the report file in the web UI; tables render natively.
 - **Markdown viewer apps**: [Bear](https://bear.app/) (Mac/iOS, free tier; import .md as a note), [MacDown](https://macdown.uranusjr.com/) (Mac, free), [Marked 2](https://marked2app.com/) (Mac, paid) or [iA Writer](https://ia.net/writer) (Mac/iOS/Windows/Android, paid), [Obsidian](https://obsidian.md/) or [Typora](https://typora.io/) (cross-platform).

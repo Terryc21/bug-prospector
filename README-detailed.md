@@ -58,7 +58,7 @@ Reports are written to `.agents/research/YYYY-MM-DD-bug-prospector-*.md` with:
 - Fragile code warnings (works now, may break later)
 - Already-guarded instances (reference)
 
-**Terminal-adaptive tables:** Detects terminal width before rendering. Wide terminals (160+ columns) get the full 8-column table inline. Narrow terminals get a compact 4-column table with the full table written to the report file.
+**Terminal-adaptive tables:** Detects terminal width before rendering. Wide terminals (180+ columns) get the full table inline. Narrow terminals get a compact 4-column table with the full table written to the report file.
 
 A complete sample report — 4 BUG findings, 2 FRAGILE, 3 OK, 1 REVIEW across 4 lenses — is at [`skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md`](skills/bug-prospector/examples/2026-04-29-bug-prospector-backup-manager.md). It demonstrates the full output format including detailed findings with current code + suggested fix for each, plus the FRAGILE classification (works now, breaks later) and the Already-Guarded reference list.
 
