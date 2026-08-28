@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.2.1
+version: 1.2.2
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -649,7 +649,19 @@ AskUserQuestion with questions:
 
 ### Fix Workflow: "Fix selected bugs"
 
-Present the bug list for selection:
+Present the bug list for selection. **The list is generated from the actual findings — it is never a fixed three.** `AskUserQuestion` allows at most 4 options per question and 4 questions per call, so 16 findings fit in one call; beyond that, page.
+
+**Build the options:** one option per BUG and FRAGILE finding, in the Issue Rating Table's order (Urgency, then ROI). Label each with its table row number so the two views line up — `Bug 1`, `Bug 2`, `F1`, `F2`. Description carries `[Urgency] [Fix Effort]`.
+
+| Findings | Shape |
+|---|---|
+| 1–4 | One question, one call |
+| 5–16 | 2–4 questions in ONE call, 4 options each — as Step 1.2 does for the 7 lenses |
+| 17+ | Page: 16 per call, "Select from findings 1–16", then a second call for 17–32, and so on |
+
+Split multi-question calls at natural boundaries where one exists — all 🔴 Critical in the first question, 🟡 High in the second — rather than mechanically at every fourth row. A user scanning for the critical ones should find them together.
+
+Every question uses `"multiSelect": true`. **Selections accumulate across questions and across pages**: the user picks from question 1 AND question 2 AND page 2, and the union is the final set. Never treat a later question as replacing an earlier answer.
 
 ```
 AskUserQuestion with questions:
@@ -660,12 +672,26 @@ AskUserQuestion with questions:
     "options": [
       {"label": "Bug 1 — [brief description]", "description": "[Urgency] [Fix Effort]"},
       {"label": "Bug 2 — [brief description]", "description": "[Urgency] [Fix Effort]"},
-      {"label": "Bug 3 — [brief description]", "description": "[Urgency] [Fix Effort]"}
+      {"label": "Bug 3 — [brief description]", "description": "[Urgency] [Fix Effort]"},
+      {"label": "Bug 4 — [brief description]", "description": "[Urgency] [Fix Effort]"}
+    ],
+    "multiSelect": true
+  },
+  {
+    "question": "More findings:",
+    "header": "More",
+    "options": [
+      {"label": "F1 — [brief description]", "description": "[Urgency] [Fix Effort]"},
+      {"label": "F2 — [brief description]", "description": "[Urgency] [Fix Effort]"}
     ],
     "multiSelect": true
   }
 ]
 ```
+
+The shape above is illustrative — 6 findings across 2 questions. Emit as many questions as the finding count requires, up to 4 per call.
+
+🛑 **Never truncate the list to fit.** If a run produces 30 findings, page through all 30. Silently dropping findings 17+ presents a partial list as if it were complete, and the user has no way to see what is missing.
 
 After selection, one confirmation prompt with opt-out:
 
@@ -685,9 +711,13 @@ AskUserQuestion with questions:
 ]
 ```
 
+Keep `[brief list]` readable: name up to 5 selected findings by row number, then `+N more` (`Bug 1, Bug 2, Bug 4, F1, F2 +12 more`). The full list was just on screen during selection; the confirmation is a sanity check on the count, not a re-read.
+
 Then fix all selected bugs without per-bug prompting — the selection itself was the decision.
 
 **If user chooses "Let's chat":** Answer questions, then re-prompt the confirmation.
+
+**If the user selects nothing** (all questions dismissed or no options chosen): do not fall through to fixing everything. Say that nothing was selected and re-prompt the selection once; if still empty, stop and leave the report as the deliverable.
 
 ---
 
