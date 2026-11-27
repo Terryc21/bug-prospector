@@ -24,7 +24,7 @@ Bug Prospector works **from the code outward** — reading functions, tracing da
 1. **Assumption Audit** — List every implicit assumption, evaluate what breaks when violated
 2. **State Machine Analysis** — Find states that deadlock, overlap, or never reset
 3. **Boundary Conditions** — Zero items, empty strings, max values, off-by-one
-4. **Data Lifecycle Tracing** — Follow data from creation to deletion, find orphans and gaps
+4. **Data Lifecycle Tracing** — Follow data from creation to deletion, find orphans and gaps (including fields a backup, export or import path drops, and CloudKit sharing writes the server discards)
 5. **Error Path Exerciser** — Take every error branch and see if the UI recovers
 6. **Time-Dependent Bugs** — Timezone shifts, rapid taps, slow networks, first launch after months
 7. **Platform Divergence** — Apple Silicon vs Intel, iOS vs macOS, iPad multitasking

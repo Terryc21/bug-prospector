@@ -1,7 +1,7 @@
 ---
 name: bug-prospector
 description: 'Mine for hidden bugs that pattern-based auditors miss. 7 analysis lenses: assumptions, state machines, boundary conditions, data lifecycle, error paths, time-dependent behavior, and platform divergence. Triggers: "prospect for bugs", "find hidden bugs", "assumption audit", "what could go wrong", "bug prospector".'
-version: 1.4.0
+version: 1.5.0
 author: Terry Nyberg, Coffee & Code LLC
 license: Apache-2.0
 allowed-tools: [Grep, Glob, Read, Write, Bash, AskUserQuestion, Agent]
@@ -457,6 +457,12 @@ Grep pattern="Int\.max|\.count\s*-\s*1" glob="$SOURCE_GLOB"
    - Modified but UI not updated (stale display)
    - Deleted but references remain (dangling pointers, orphaned data)
    - Synced but no conflict resolution
+4. **Field coverage.** For each entity with two or more write-out paths (backup, export,
+   import, sync record, API mapping), follow `references/field-coverage.md`: read every path,
+   build the field-by-path table, and classify each missing field before reporting it.
+5. **CloudKit sharing.** If the scope contains `CKShare`, follow
+   `references/cloudkit-sharing-contract.md`. Those failures are invisible in the Swift: the
+   save succeeds and the server discards it, so a clean read of the code proves nothing.
 
 **Search accelerators:**
 ```

@@ -107,7 +107,7 @@ Each lens is a different angle for asking "what could go wrong here?"
 | 1 | **Assumptions** | Implicit assumptions that hold today but break when conditions change |
 | 2 | **State machine** | States that shouldn't be reachable, two states active at once, transitions that get interrupted |
 | 3 | **Boundary conditions** | Zero, one, the maximum value, an empty collection, off-by-one errors |
-| 4 | **Data lifecycle** | Data created but never cleaned up, stale displays, orphaned references |
+| 4 | **Data lifecycle** | Data created but never cleaned up, stale displays, orphaned references, fields dropped by a backup, export or import path, CloudKit sharing writes the server silently discards |
 | 5 | **Error paths** | Errors that leave the UI stuck, errors swallowed silently, errors that lose user data |
 | 6 | **Time-dependent bugs** | Timezones, rapid taps creating duplicates, slow networks, first-launch-after-weeks code |
 | 7 | **Platform divergence** | Code that works on Apple Silicon but fails on Intel, or on iOS but not macOS, OS-version gaps |
@@ -187,11 +187,11 @@ The full methodology lives in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md), incl
 - [**bug-echo**](https://github.com/Terryc21/bug-echo) — sibling-bug scan after a fix; companion skill
 - [**workflow-audit**](https://github.com/Terryc21/workflow-audit) — 5-layer SwiftUI behavioral flow audit
 - [**unforget**](https://github.com/Terryc21/unforget) — one-file deferred-work ledger
-- [**radar-suite**](https://github.com/Terryc21/radar-suite) — 6-skill suite tracing user behavior paths through the app (iOS + macOS)
+- [**radar-suite**](https://github.com/Terryc21/radar-suite) — time-bomb and UI audits for iOS + macOS (its other radar skills were retired in November 2026; their data-coverage and CloudKit sharing checks now live in bug-prospector's Lens 4)
 - [**prompter**](https://github.com/Terryc21/prompter) — prompt rewriting before execution
 - [**skill-reviewer**](https://github.com/Terryc21/skill-reviewer) — candid reviews of other Claude Code skills
 - [**tutorial-creator**](https://github.com/Terryc21/tutorial-creator) — annotated tutorials from your codebase
-- [**sitrep**](https://github.com/Terryc21/sitrep) — Xcode workflow skills (formerly `xcode-workflow-skills`)
+- [**sitrep**](https://github.com/Terryc21/sitrep) — Xcode workflow skills (formerly `xcode-workflow-skills`; retired November 2026)
 
 ## Author
 
